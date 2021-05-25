@@ -25,6 +25,9 @@ class Constants(object):
 
     N_FIRMS = 93750
 
+    # parameters for maximize value iteration
+    MAX_ITERATION = 1000000
+
     # Unknown useful variables
     STR = 2
     DELP = 4

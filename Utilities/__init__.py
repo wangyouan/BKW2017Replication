@@ -40,7 +40,7 @@ def generate_profitability_distribution(mu, rho, sigma, number):
     f1 = f1.T
     f2 = f2.T
     trans = f2 - f1
-    return z, trans
+    return np.exp(z), trans
 
 
 def get_range(min_val, max_val, number):
