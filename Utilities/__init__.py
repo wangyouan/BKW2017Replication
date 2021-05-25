@@ -41,3 +41,20 @@ def generate_profitability_distribution(mu, rho, sigma, number):
     f2 = f2.T
     trans = f2 - f1
     return z, trans
+
+
+def get_range(min_val, max_val, number):
+    """
+    Get a range of value based on the start and end value
+    :param min_val: start value
+    :param max_val: end value
+    :param number: number of variables needed
+    :return: numpy series
+    """
+
+    step = (max_val - min_val) / number
+    result_series = np.zeros(number)
+    for i in range(number):
+        result_series[i] = min_val + i * step
+
+    return result_series
