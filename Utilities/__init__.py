@@ -58,3 +58,17 @@ def get_range(min_val, max_val, number):
         result_series[i] = min_val + i * step
 
     return result_series
+
+
+if __name__ == '__main__':
+    profit, trans = generate_profitability_distribution(-2.2, 0.5, 0.086, 15)
+    print(profit)
+
+    s = ''
+    for i in range(15):
+        for j in range(15):
+            s = '{}\t{:.4f}'.format(s, trans[i, j])
+
+        s = '{}\n'.format(s)
+
+    print(s)

@@ -5,6 +5,9 @@
 # @Date: 2021/5/25
 # @Author: Mark Wang
 # @Email: markwang@connect.hku.hk
+
+import pandas as pd
+from pandas import DataFrame
 import numpy as np
 
 from Constants.constants import Constants
@@ -41,9 +44,14 @@ class FirmValue(Constants):
         self._transition_matrix = None
         self._investment_grid = None
         self._debt_grid = None
-        self._debt_policy_grid = None
+        self._debt_prime_grid = None
 
         self._firm_value = None
+
+        # store policy matrix
+        self._debt_policy_matrix = None
+        self._invest_policy_matrix = None
+
         self.initialize(delta, rho, mu, gamma, theta, sigma, lambda_)
 
     def initialize(self, delta=None, rho=None, mu=None, gamma=None, theta=None, sigma=None, lambda_=None):
@@ -61,11 +69,16 @@ class FirmValue(Constants):
         self._investment_grid = get_range(self._delta * (2 - np.ceil(self.I_NUM / (2 * self.DELP))),
                                           self._delta * (2 + np.ceil(self.I_NUM / (2 * self.DELP))),
                                           self.I_NUM)
-        self._debt_policy_grid = get_range(-self._theta, self._theta, self.P_NEXT_NUM)
+        self._debt_prime_grid = get_range(-self._theta, self._theta, self.P_NEXT_NUM)
         self._firm_value = np.ones((self.P_NUM, self.Z_NUM))
+        self._debt_policy_matrix = np.zeros((self.P_NUM, self.Z_NUM))
+        self._invest_policy_matrix = np.zeros((self.P_NUM, self.Z_NUM))
 
     def optimize(self):
         firm_value = self._firm_value.copy()
+        all_val = np.zeros((self.P_NUM, self.P_NEXT_NUM, self.I_NUM, self.Z_NUM))
+        queue_i = np.zeros((self.P_NEXT_NUM, self.I_NUM, self.Z_NUM))
+
         for _ in range(self.MAX_ITERATION):
             value_transpose = np.dot(firm_value, self._transition_matrix)
             value_transpose_next = np.zeros((self.P_NEXT_NUM, self.Z_NUM))
@@ -80,19 +93,79 @@ class FirmValue(Constants):
                     value_transpose_next[ip, :] = value_transpose[ipd, :] + (
                             value_transpose[ipu, :] - value_transpose[ipd, :]) / (
                                                           self._debt_grid[ipu] - self._debt_grid[ipd]) * (
-                                                          self._debt_policy_grid[ip] - self._debt_grid[ipd])
-            queue_i = np.zeros((self.P_NEXT_NUM, self.I_NUM, self.Z_NUM))
+                                                          self._debt_prime_grid[ip] - self._debt_grid[ipd])
+
             for i in range(self.I_NUM):
                 queue_i[:, i, :] = value_transpose_next * (1 - self._delta + self._investment_grid[i])
 
-            for i in range(self.P_NUM):
-                pass
+            for ip in range(self.P_NUM):
+                for ipn in range(self.P_NEXT_NUM):
+                    for ii in range(self.I_NUM):
+                        for iz in range(self.Z_NUM):
+                            all_val[ip, ipn, ii, iz] = self.BETA * queue_i[ipn, ii, iz] + self.get_payoff(
+                                self._profitability_grid[iz], self._investment_grid[ii], self._debt_grid[ip],
+                                self._debt_prime_grid[ipn])
+
+            firm_value_next = np.max(np.max(all_val, axis=1), axis=1)
+            difference = firm_value_next - firm_value
+            if abs(np.max(difference)) < self.THRESHOLD:
+                self._firm_value = firm_value_next.copy()
+                break
+
+            firm_value = firm_value_next.copy()
 
         else:
             raise RuntimeError('Model doesn\'t converge')
 
-    def get_debt_policy(self):
-        pass
+        for iz in range(self.Z_NUM):
+            for ip in range(self.P_NUM):
+                current_value_firm = firm_value[ip, :, :, iz]
+                self._debt_policy_matrix[iz, ip] = self._debt_prime_grid[np.argmax(np.max(current_value_firm, axis=1))]
+                self._invest_policy_matrix[iz, ip] = self._investment_grid[
+                    np.argmax(np.max(current_value_firm, axis=0))]
+
+    def set_model_parameters(self, delta=None, rho=None, mu=None, gamma=None, theta=None, sigma=None, lambda_=None):
+        if delta is not None:
+            self.set_delta(delta)
+
+        if rho is not None:
+            self.set_rho(rho)
+
+        if mu is not None:
+            self.set_mu(mu)
+
+        if gamma is not None:
+            self.set_gamma(gamma)
+
+        if theta is not None:
+            self.set_theta(theta)
+
+        if sigma is not None:
+            self.set_sigma(sigma)
+
+        if lambda_ is not None:
+            self.set_lambda(lambda_)
+
+    def set_delta(self, delta):
+        self._delta = delta
+
+    def set_rho(self, rho):
+        self._rho = rho
+
+    def set_mu(self, mu):
+        self._mu = mu
+
+    def set_gamma(self, gamma):
+        self._gamma = gamma
+
+    def set_theta(self, theta):
+        self._theta = theta
+
+    def set_sigma(self, sigma):
+        self._sigma = sigma
+
+    def set_lambda(self, lambda_):
+        self._lambda = lambda_
 
     def get_payoff(self, profitability, investment, debt, next_debt):
         payoff = profitability - investment - 0.5 * self._gamma * investment ** 2 - debt * (1 + self.RF) + next_debt * (
@@ -102,3 +175,69 @@ class FirmValue(Constants):
             payoff *= (1 + self._lambda)
 
         return payoff
+
+    def simulate_model(self, years, firms):
+        """
+        simulate model
+        :param years: number of year
+        :param firms: number of firms
+        :return: simulated model vectors
+        """
+        # initialize
+        init_value = np.random.random(firms)
+        profit_index = [int(i * self.Z_NUM) for i in init_value]
+        debt_index = [int(i * self.P_NUM) for i in init_value]
+        value_array = [self._firm_value[profit_index[i], debt_index[i]] for i in range(firms)]
+        investment_array = [self._invest_policy_matrix[profit_index[i], debt_index[i]] for i in range(firms)]
+        debt_array = [self._debt_grid[int(i * self.P_NUM)] for i in init_value]
+        trans_cdf = self._transition_matrix.copy()
+
+        for i in range(self.Z_NUM - 2):
+            trans_cdf[:, i + 1] += trans_cdf[:, i]
+
+        trans_cdf[:, self.Z_NUM - 1] = 1
+
+        # run simulation
+        simulated_data_list = list()
+        for year_i in range(years):
+            simulated_data = DataFrame(
+                columns=['value', 'profitability', 'debt', 'investment', 'payoff'], index=list(range(firms)))
+
+            simulated_data.loc[:, 'profitability'] = self._profitability_grid[profit_index]
+            simulated_data.loc[:, 'debt'] = debt_array
+            simulated_data.loc[:, 'value'] = value_array
+            simulated_data.loc[:, 'investment'] = investment_array
+
+            # get next period profitability
+            next_shock = np.random.random(firms)
+            for i in range(firms):
+                # save current data
+                profitability = simulated_data.loc[i, 'profitability']
+                investment = simulated_data.loc[i, 'investment']
+                debt = simulated_data.loc[i, 'debt']
+
+                # determine next period values
+                debt_index = max(len(self._debt_grid[self._debt_grid < debt_array[i]]) - 1, 0)
+                profit_index[i] = len(trans_cdf[profit_index[i]][trans_cdf[profit_index[i]] < next_shock[i]])
+                if debt_index == 0:
+                    debt_array[i] = self._debt_policy_matrix[debt_index, profit_index[i]]
+                    value_array[i] = self._firm_value[debt_index, profit_index[i]]
+                    investment_array[i] = self._invest_policy_matrix[debt_index, profit_index[i]]
+
+                else:
+                    fraction = (debt_array[i] - self._debt_grid[debt_index - 1]) * (
+                            self._debt_grid[debt_index] - self._debt_grid[debt_index - 1])
+                    debt_array[i] = fraction * self._debt_policy_matrix[debt_index, profit_index[i]] + (1 - fraction) \
+                                    * self._debt_policy_matrix[debt_index - 1, profit_index[i]]
+                    value_array[i] = fraction * self._firm_value[debt_index, profit_index[i]] + (1 - fraction) \
+                                     * self._firm_value[debt_index - 1, profit_index[i]]
+                    investment_array[i] = fraction * self._invest_policy_matrix[debt_index, profit_index[i]] + \
+                                          (1 - fraction) * self._invest_policy_matrix[debt_index - 1, profit_index[i]]
+
+                simulated_data.loc[i, 'payoff'] = self.get_payoff(profitability, investment, debt, debt_array[i])
+
+            simulated_data.loc[:, 'year'] = year_i
+            simulated_data.loc[:, 'firm_id'] = list(range(firms))
+            simulated_data_list.append(simulated_data)
+
+        return pd.concat(simulated_data_list, ignore_index=True, sort=False)

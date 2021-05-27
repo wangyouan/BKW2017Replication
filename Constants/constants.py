@@ -27,6 +27,7 @@ class Constants(object):
 
     # parameters for maximize value iteration
     MAX_ITERATION = 1000000
+    THRESHOLD = 1e-6
 
     # Unknown useful variables
     STR = 2
