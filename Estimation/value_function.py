@@ -109,19 +109,20 @@ class FirmValue(Constants):
             firm_value_next = np.max(np.max(all_val, axis=1), axis=1)
             difference = firm_value_next - firm_value
             if abs(np.max(difference)) < self.THRESHOLD:
-                self._firm_value = firm_value_next.copy()
                 break
 
             firm_value = firm_value_next.copy()
 
-        else:
-            raise RuntimeError('Model doesn\'t converge')
+        # else:
+        #     raise RuntimeError('Model doesn\'t converge')
+
+        self._firm_value = firm_value.copy()
 
         for iz in range(self.Z_NUM):
             for ip in range(self.P_NUM):
-                current_value_firm = firm_value[ip, :, :, iz]
-                self._debt_policy_matrix[iz, ip] = self._debt_prime_grid[np.argmax(np.max(current_value_firm, axis=1))]
-                self._invest_policy_matrix[iz, ip] = self._investment_grid[
+                current_value_firm = all_val[ip, :, :, iz]
+                self._debt_policy_matrix[ip, iz] = self._debt_prime_grid[np.argmax(np.max(current_value_firm, axis=1))]
+                self._invest_policy_matrix[ip, iz] = self._investment_grid[
                     np.argmax(np.max(current_value_firm, axis=0))]
 
     def set_model_parameters(self, delta=None, rho=None, mu=None, gamma=None, theta=None, sigma=None, lambda_=None):
@@ -187,8 +188,8 @@ class FirmValue(Constants):
         init_value = np.random.random(firms)
         profit_index = [int(i * self.Z_NUM) for i in init_value]
         debt_index = [int(i * self.P_NUM) for i in init_value]
-        value_array = [self._firm_value[profit_index[i], debt_index[i]] for i in range(firms)]
-        investment_array = [self._invest_policy_matrix[profit_index[i], debt_index[i]] for i in range(firms)]
+        value_array = [self._firm_value[debt_index[i], profit_index[i]] for i in range(firms)]
+        investment_array = [self._invest_policy_matrix[debt_index[i], profit_index[i]] for i in range(firms)]
         debt_array = [self._debt_grid[int(i * self.P_NUM)] for i in init_value]
         trans_cdf = self._transition_matrix.copy()
 
@@ -241,3 +242,9 @@ class FirmValue(Constants):
             simulated_data_list.append(simulated_data)
 
         return pd.concat(simulated_data_list, ignore_index=True, sort=False)
+
+
+if __name__ == '__main__':
+    fv = FirmValue()
+    fv.optimize()
+    sim_data = fv.simulate_model(58, 900)

@@ -26,8 +26,8 @@ class Constants(object):
     N_FIRMS = 93750
 
     # parameters for maximize value iteration
-    MAX_ITERATION = 1000000
-    THRESHOLD = 1e-6
+    MAX_ITERATION = 1000
+    THRESHOLD = 1e-2
 
     # Unknown useful variables
     STR = 2
