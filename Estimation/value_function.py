@@ -70,7 +70,7 @@ class FirmValue(Constants):
                                           self._delta * (2 + np.ceil(self.I_NUM / (2 * self.DELP))),
                                           self.I_NUM)
         self._debt_prime_grid = get_range(-self._theta, self._theta, self.P_NEXT_NUM)
-        self._firm_value = np.ones((self.P_NUM, self.Z_NUM))
+        self._firm_value = np.zeros((self.P_NUM, self.Z_NUM))
         self._debt_policy_matrix = np.zeros((self.P_NUM, self.Z_NUM))
         self._invest_policy_matrix = np.zeros((self.P_NUM, self.Z_NUM))
 
@@ -78,35 +78,39 @@ class FirmValue(Constants):
         firm_value = self._firm_value.copy()
         all_val = np.zeros((self.P_NUM, self.P_NEXT_NUM, self.I_NUM, self.Z_NUM))
         queue_i = np.zeros((self.P_NEXT_NUM, self.I_NUM, self.Z_NUM))
+        payoff = np.zeros((self.P_NUM, self.P_NEXT_NUM, self.I_NUM, self.Z_NUM))
+
+        for ip in range(self.P_NUM):
+            for ip_prime in range(self.P_NEXT_NUM):
+                for ii in range(self.I_NUM):
+                    for iz in range(self.Z_NUM):
+                        payoff[ip, ip_prime, ii, iz] = self.get_payoff(
+                            self._profitability_grid[iz], self._investment_grid[ii], self._debt_grid[ip],
+                            self._debt_prime_grid[ip_prime])
 
         for _ in range(self.MAX_ITERATION):
-            value_transpose = np.dot(firm_value, self._transition_matrix)
-            value_transpose_next = np.zeros((self.P_NEXT_NUM, self.Z_NUM))
+            expected_fv = np.dot(firm_value, self._transition_matrix)
+            expected_fv_prime = np.zeros((self.P_NEXT_NUM, self.Z_NUM))
             for ip in range(self.P_NEXT_NUM):
-                ipd = int(ip * self.P_NUM / self.P_NEXT_NUM)
+                ipd = int(ip * (self.P_NUM - 1) / (self.P_NEXT_NUM - 1))
                 ipu = ipd + 1
 
                 if ipu >= self.P_NUM:
                     ipd = self.P_NUM - 1
-                    value_transpose_next[ip, :] = value_transpose[ipd, :]
+                    expected_fv_prime[ip, :] = expected_fv[ipd, :]
                 else:
-                    value_transpose_next[ip, :] = value_transpose[ipd, :] + (
-                            value_transpose[ipu, :] - value_transpose[ipd, :]) / (
-                                                          self._debt_grid[ipu] - self._debt_grid[ipd]) * (
-                                                          self._debt_prime_grid[ip] - self._debt_grid[ipd])
+                    expected_fv_prime[ip, :] = (expected_fv[ipd, :] * (
+                            self._debt_grid[ipu] - self._debt_prime_grid[ip]) + expected_fv[ipu, :] * (
+                                                           self._debt_prime_grid[ip] - self._debt_grid[ipd])) / (
+                                                          self._debt_grid[ipu] - self._debt_grid[ipd])
 
             for i in range(self.I_NUM):
-                queue_i[:, i, :] = value_transpose_next * (1 - self._delta + self._investment_grid[i])
+                queue_i[:, i, :] = expected_fv_prime * (1 - self._delta + self._investment_grid[i])
 
             for ip in range(self.P_NUM):
-                for ipn in range(self.P_NEXT_NUM):
-                    for ii in range(self.I_NUM):
-                        for iz in range(self.Z_NUM):
-                            all_val[ip, ipn, ii, iz] = self.BETA * queue_i[ipn, ii, iz] + self.get_payoff(
-                                self._profitability_grid[iz], self._investment_grid[ii], self._debt_grid[ip],
-                                self._debt_prime_grid[ipn])
+                all_val[ip, :, :, :] = payoff[ip, :, :, :] + self.BETA * queue_i
 
-            firm_value_next = np.max(np.max(all_val, axis=1), axis=1)
+            firm_value_next = np.max(np.max(all_val, axis=2), axis=1)
             difference = firm_value_next - firm_value
             if abs(np.max(difference)) < self.THRESHOLD:
                 break
@@ -245,6 +249,6 @@ class FirmValue(Constants):
 
 
 if __name__ == '__main__':
-    fv = FirmValue()
+    fv = FirmValue(delta=0.0049, rho=0.2, mu=-2.4, gamma=40, theta=0.4, sigma=0.3, lambda_=0.2)
     fv.optimize()
     sim_data = fv.simulate_model(58, 900)

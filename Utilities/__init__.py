@@ -52,7 +52,7 @@ def get_range(min_val, max_val, number):
     :return: numpy series
     """
 
-    step = (max_val - min_val) / number
+    step = (max_val - min_val) / (number - 1)
     result_series = np.zeros(number)
     for i in range(number):
         result_series[i] = min_val + i * step

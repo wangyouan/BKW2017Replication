@@ -11,7 +11,7 @@ class Constants(object):
     # Constants
     ###########################################
     # risk-free rate
-    RF = 0.02
+    RF = 0.04
 
     # corporate income tax
     TAU_C = 0.1
@@ -26,7 +26,7 @@ class Constants(object):
     N_FIRMS = 93750
 
     # parameters for maximize value iteration
-    MAX_ITERATION = 1000
+    MAX_ITERATION = 100
     THRESHOLD = 1e-2
 
     # Unknown useful variables
