@@ -112,7 +112,10 @@ class FirmValue(Constants):
 
             firm_value_next = np.max(np.max(all_val, axis=2), axis=1)
             difference = firm_value_next - firm_value
-            if abs(np.max(difference)) < self.THRESHOLD:
+            model_diff = abs(np.max(difference))
+            if _ % 100 == 0:
+                print('Iteration: %d, Model difference: %f' % (_, model_diff))
+            if model_diff < self.THRESHOLD:
                 break
 
             firm_value = firm_value_next.copy()
@@ -249,6 +252,6 @@ class FirmValue(Constants):
 
 
 if __name__ == '__main__':
-    fv = FirmValue(delta=0.0049, rho=0.2, mu=-2.4, gamma=40, theta=0.4, sigma=0.3, lambda_=0.2)
+    fv = FirmValue(delta=0.0449, rho=0.8, mu=-2.4, gamma=40, theta=0.4, sigma=0.3, lambda_=0.2)
     fv.optimize()
     sim_data = fv.simulate_model(58, 900)
