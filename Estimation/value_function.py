@@ -269,6 +269,7 @@ class FirmValue(Constants):
 
 
 if __name__ == '__main__':
-    fv = FirmValue(delta=0.0449, rho=0.8, mu=-2.4, gamma=40, theta=0.4, sigma=0.3, lambda_=0.2)
+    fv = FirmValue(delta=0.0634630044682483, rho=0.5286754702975660, mu=-2.2413654287674789, gamma=11.0530988801549661,
+                   theta=0.4177055908170345, sigma=0.5457619195960740, lambda_=0.0906983393549567)
     error_code = fv.optimize()
     sim_data = fv.simulate_model(58, 900)

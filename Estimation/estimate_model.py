@@ -67,7 +67,7 @@ def criterion(params):
 
 
 if __name__ == '__main__':
-    params_init_1 = np.array([-2.2, 0.83, 0.35, 0.0449, 40, 0.4, 0.2])
+    params_init_1 = np.array([-2.2067, 0.8349, 0.3594, 0.0449, 29.9661, 0.3816, 0.1829])
     results1_1 = opt.minimize(criterion, params_init_1, method='L-BFGS-B',
                               bounds=(
                                   (-10, 0), (0.8, 1), (0.3, 0.4), (1e-10, 1), (1e-10, None), (1e-10, 1), (1e-10, 1)))
