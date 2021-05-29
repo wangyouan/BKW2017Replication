@@ -23,11 +23,13 @@ class Constants(object):
     P_NEXT_NUM = 64
     I_NUM = 61
 
-    N_FIRMS = 93750
+    N_FIRMS = 9375
+    N_YEARS = 58
 
     # parameters for maximize value iteration
     MAX_ITERATION = 10000
-    THRESHOLD = 1e-2
+    COVERAGE_THRESHOLD = 1e-4
+    DIFF_MAX_THRESHOLD = 1e6
 
     # Unknown useful variables
     STR = 2

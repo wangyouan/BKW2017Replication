@@ -75,6 +75,13 @@ class FirmValue(Constants):
         self._invest_policy_matrix = np.zeros((self.P_NUM, self.Z_NUM))
 
     def optimize(self):
+        """
+        Optimize model
+        :return: error code list
+            0: Succeed
+            1: Don't coverage
+            2: Too large model difference
+        """
         firm_value = self._firm_value.copy()
         all_val = np.zeros((self.P_NUM, self.P_NEXT_NUM, self.I_NUM, self.Z_NUM))
         queue_i = np.zeros((self.P_NEXT_NUM, self.I_NUM, self.Z_NUM))
@@ -115,13 +122,15 @@ class FirmValue(Constants):
             model_diff = abs(np.max(difference))
             if _ % 100 == 0:
                 print('Iteration: %d, Model difference: %f' % (_, model_diff))
-            if model_diff < self.THRESHOLD:
+            if model_diff < self.COVERAGE_THRESHOLD:
                 break
+            elif model_diff > self.DIFF_MAX_THRESHOLD:
+                return 2
 
             firm_value = firm_value_next.copy()
 
-        # else:
-        #     raise RuntimeError('Model doesn\'t converge')
+        else:
+            return 1
 
         self._firm_value = firm_value.copy()
 
@@ -131,6 +140,7 @@ class FirmValue(Constants):
                 self._debt_policy_matrix[ip, iz] = self._debt_prime_grid[np.argmax(np.max(current_value_firm, axis=1))]
                 self._invest_policy_matrix[ip, iz] = self._investment_grid[
                     np.argmax(np.max(current_value_firm, axis=0))]
+        return 0
 
     def set_model_parameters(self, delta=None, rho=None, mu=None, gamma=None, theta=None, sigma=None, lambda_=None):
         if delta is not None:
@@ -190,6 +200,13 @@ class FirmValue(Constants):
         :param years: number of year
         :param firms: number of firms
         :return: simulated model vectors
+            firm_id
+            year
+            value
+            profitability
+            debt
+            investment
+            payoff
         """
         # initialize
         init_value = np.random.random(firms)
@@ -253,5 +270,5 @@ class FirmValue(Constants):
 
 if __name__ == '__main__':
     fv = FirmValue(delta=0.0449, rho=0.8, mu=-2.4, gamma=40, theta=0.4, sigma=0.3, lambda_=0.2)
-    fv.optimize()
+    error_code = fv.optimize()
     sim_data = fv.simulate_model(58, 900)
