@@ -60,6 +60,25 @@ def get_range(min_val, max_val, number):
     return result_series
 
 
+def inter_product(target_val, base_series):
+    """
+    the inter product value would be, cfraction * series[low_index] + (1 - cfraction) * series[up_index]
+    :param target_val: Target value
+    :param base_series: base series
+    :return: cfraction, low_index, up_index
+    """
+    base_length = len(base_series)
+    low_index = len(base_series[base_series < target_val])
+    up_index = low_index + 1
+    if up_index >= base_length:
+        return 0, base_length-2, base_length-1
+    else:
+        fraction = (base_series[up_index] - target_val) / (base_series[up_index] - base_series[low_index])
+
+        return fraction, low_index, up_index
+
+
+
 if __name__ == '__main__':
     profit, trans = generate_profitability_distribution(-2.2, 0.5, 0.086, 15)
     print(profit)

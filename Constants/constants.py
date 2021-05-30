@@ -27,9 +27,10 @@ class Constants(object):
     N_YEARS = 58
 
     # parameters for maximize value iteration
-    MAX_ITERATION = 10000
+    MAX_ITERATION = 3000
+    VALUE_FUNCTION_ITERATION = 50
     COVERAGE_THRESHOLD = 1e-4
-    DIFF_MAX_THRESHOLD = 1e6
+    DIFF_MAX_THRESHOLD = 1e16
 
     # Unknown useful variables
     STR = 2
