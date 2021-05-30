@@ -68,10 +68,12 @@ def inter_product(target_val, base_series):
     :return: cfraction, low_index, up_index
     """
     base_length = len(base_series)
-    low_index = len(base_series[base_series < target_val])
-    up_index = low_index + 1
-    if up_index >= base_length:
-        return 0, base_length-2, base_length-1
+    up_index = len(base_series[base_series < target_val])
+    low_index = up_index - 1
+    if low_index < 0:
+        return 1, 0, 1
+    elif up_index >= base_length:
+        return 0, base_length - 2, base_length - 1
     else:
         fraction = (base_series[up_index] - target_val) / (base_series[up_index] - base_series[low_index])
 

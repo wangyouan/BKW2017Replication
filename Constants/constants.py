@@ -11,7 +11,7 @@ class Constants(object):
     # Constants
     ###########################################
     # risk-free rate
-    RF = 0.04
+    RF = 0.02
 
     # corporate income tax
     TAU_C = 0.1

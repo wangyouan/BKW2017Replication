@@ -98,10 +98,10 @@ class FirmValue(Constants):
                     ipd = self.P_NUM - 1
                     expected_fv_prime[ip, :] = expected_fv[ipd, :]
                 else:
-                    expected_fv_prime[ip, :] = (expected_fv[ipd, :] * (
-                            self._debt_grid[ipu] - self._debt_prime_grid[ip]) + expected_fv[ipu, :] * (
-                                                        self._debt_prime_grid[ip] - self._debt_grid[ipd])) / (
-                                                       self._debt_grid[ipu] - self._debt_grid[ipd])
+                    frac = (self._debt_grid[ipu] - self._debt_prime_grid[ip]) / (
+                                self._debt_grid[ipu] - self._debt_grid[ipd])
+                    print(frac)
+                    expected_fv_prime[ip, :] = expected_fv[ipd, :] * frac + expected_fv[ipu, :] * (1 - frac)
 
             for i in range(self.I_NUM):
                 queue_i[:, i, :] = expected_fv_prime * (1 - self._delta + self._investment_grid[i])
@@ -109,9 +109,9 @@ class FirmValue(Constants):
             for ip in range(self.P_NUM):
                 all_val[ip, :, :, :] = payoff[ip, :, :, :] + self.BETA * queue_i
 
-            firm_value_next = np.max(np.max(all_val, axis=2), axis=1)
+            firm_value_next = np.max(np.max(all_val, axis=1), axis=1)
             difference = firm_value_next - firm_value
-            model_diff = abs(np.max(difference))
+            model_diff = np.max(np.abs(difference))
             if _ % 100 == 0:
                 print('Iteration: %d, Model difference: %f' % (_, model_diff))
             if model_diff < self.COVERAGE_THRESHOLD:
@@ -183,7 +183,7 @@ class FirmValue(Constants):
 
             # check difference
             value_difference = firm_value - firm_value_last
-            diff = max(abs(np.max(value_difference)), -np.min(value_difference))
+            diff = np.max(np.abs(value_difference))
             if _ % 10 == 0:
                 print('Iteration: %d, Model difference: %f' % (_, diff))
             if diff > self.DIFF_MAX_THRESHOLD:
@@ -256,8 +256,8 @@ class FirmValue(Constants):
         return payoff
 
     def get_payoff(self, profitability, investment, debt, next_debt):
-        payoff = profitability - investment - 0.5 * self._gamma * investment ** 2 - debt * (1 + self.RF) + next_debt * (
-                1 - self._delta + investment)
+        payoff = profitability - investment - 0.5 * self._gamma * (investment ** 2) - debt * (1 + self.RF) \
+                 + next_debt * (1 - self._delta + investment)
 
         if payoff < 0:
             payoff *= (1 + self._lambda)
@@ -340,8 +340,8 @@ if __name__ == '__main__':
     # test model value
     mu, rho, sigma, delta, gamma, theta, lambda_ = -2.2067, 0.8349, 0.3594, 0.0449, 29.9661, 0.3816, 0.1829
     fv = FirmValue(delta=delta, rho=rho, mu=mu, gamma=gamma, theta=theta, sigma=sigma, lambda_=lambda_)
-    error_code = fv.optimize_terry()
-    sim_data = fv.simulate_model(58, 900)
+    error_code = fv.optimize()
+    sim_data = fv.simulate_model(58, 1)
 
     # test generate payoff function
     # theta = 0.4177055908170345
