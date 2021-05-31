@@ -12,7 +12,7 @@ import scipy.optimize as opt
 from pandas import DataFrame
 import multiprocessing
 
-from value_function import FirmValue
+from Estimation.value_function import FirmValue
 
 
 def get_moments(fv: FirmValue, process_num=1):
