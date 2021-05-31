@@ -100,7 +100,7 @@ class FirmValue(Constants):
                 else:
                     frac = (self._debt_grid[ipu] - self._debt_prime_grid[ip]) / (
                                 self._debt_grid[ipu] - self._debt_grid[ipd])
-                    print(frac)
+                    # print(frac)
                     expected_fv_prime[ip, :] = expected_fv[ipd, :] * frac + expected_fv[ipu, :] * (1 - frac)
 
             for i in range(self.I_NUM):
