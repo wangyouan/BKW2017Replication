@@ -10,12 +10,12 @@ import numpy as np
 import pandas as pd
 import scipy.optimize as opt
 from pandas import DataFrame
-import multiprocessing
+import pathos
 
 from Estimation.value_function import FirmValue
 
 
-def get_moments(fv: FirmValue, process_num=1):
+def get_moments(fv: FirmValue, process_num:int=1):
     """
     Simulate model and return moments
     :param fv: an optimized firm value
@@ -40,7 +40,7 @@ def get_moments(fv: FirmValue, process_num=1):
         for i in range(firm_num_reminder):
             firm_num_list[i] += 1
 
-        pool = multiprocessing.Pool(process_num)
+        pool = pathos.multiprocessing.ProcessPool(process_num)
         simulated_result = pool.map(lambda x: fv.simulate_model(FirmValue.N_YEARS, x), firm_num_list)
         simulated_result2 = list()
 
@@ -75,7 +75,7 @@ def get_moments_error(data_mom, sim_mom, weighted_matrix):
 
 def criterion(params, *args):
     mu, rho, sigma, delta, gamma, theta, lambda_ = params
-    process_num = args
+    process_num: int = args[0]
     fv = FirmValue(delta=delta, mu=mu, rho=rho, sigma=sigma, theta=theta, lambda_=lambda_, gamma=gamma)
     error_code = fv.optimize_terry()
     if error_code != 0:
@@ -90,8 +90,15 @@ def criterion(params, *args):
 
 if __name__ == '__main__':
     params_init_1 = np.array([-2.2067, 0.8349, 0.3594, 0.0449, 29.9661, 0.3816, 0.1829])
-    results1_1 = opt.minimize(criterion, params_init_1, method='L-BFGS-B', tol=1e-2,
-                              bounds=(
-                                  (-6.5, -0.5), (0.3, 0.9), (0.05, 0.6), (0.01, 0.2), (3, 30), (0.1, 0.7),
-                                  (0.01, 0.25)))
-    print(results1_1)
+    # results1_1 = opt.minimize(criterion, params_init_1, args=(2,), method='L-BFGS-B', tol=1e-2,
+    #                           bounds=(
+    #                               (-6.5, -0.5), (0.3, 0.9), (0.05, 0.6), (0.01, 0.2), (3, 30), (0.1, 0.7),
+    #                               (0.01, 0.25)))
+    # print(results1_1)
+    mu, rho, sigma, delta, gamma, theta, lambda_ = params_init_1
+    process_num: int = 2
+    fv = FirmValue(delta=delta, mu=mu, rho=rho, sigma=sigma, theta=theta, lambda_=lambda_, gamma=gamma)
+    error_code = fv.optimize_terry()
+    data_moments = np.array([0.0768111297195329, 0.0032904184631855, 0.1885677166674841, 0.0285271524764669,
+                             0.0012114713963756, 0.0058249053810193, 0.1421154126428439, 0.0080642043112130])
+    sim_moments = get_moments(fv, process_num)
