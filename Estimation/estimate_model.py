@@ -90,15 +90,16 @@ def criterion(params, *args):
 
 if __name__ == '__main__':
     params_init_1 = np.array([-2.2067, 0.8349, 0.3594, 0.0449, 29.9661, 0.3816, 0.1829])
-    # results1_1 = opt.minimize(criterion, params_init_1, args=(2,), method='L-BFGS-B', tol=1e-2,
-    #                           bounds=(
-    #                               (-6.5, -0.5), (0.3, 0.9), (0.05, 0.6), (0.01, 0.2), (3, 30), (0.1, 0.7),
-    #                               (0.01, 0.25)))
-    # print(results1_1)
-    mu, rho, sigma, delta, gamma, theta, lambda_ = params_init_1
-    process_num: int = 2
-    fv = FirmValue(delta=delta, mu=mu, rho=rho, sigma=sigma, theta=theta, lambda_=lambda_, gamma=gamma)
-    error_code = fv.optimize_terry()
-    data_moments = np.array([0.0768111297195329, 0.0032904184631855, 0.1885677166674841, 0.0285271524764669,
-                             0.0012114713963756, 0.0058249053810193, 0.1421154126428439, 0.0080642043112130])
-    sim_moments = get_moments(fv, process_num)
+    results1_1 = opt.minimize(criterion, params_init_1, args=(2,), method='L-BFGS-B',
+                              options={'eps': 1e-1, 'gtol': 1e-3},
+                              bounds=(
+                                  (-6.5, -0.5), (0.3, 0.9), (0.05, 0.6), (0.01, 0.2), (3, 30), (0.1, 0.7),
+                                  (0.01, 0.25)))
+    print(results1_1)
+    # mu, rho, sigma, delta, gamma, theta, lambda_ = params_init_1
+    # process_num: int = 2
+    # fv = FirmValue(delta=delta, mu=mu, rho=rho, sigma=sigma, theta=theta, lambda_=lambda_, gamma=gamma)
+    # error_code = fv.optimize_terry()
+    # data_moments = np.array([0.0768111297195329, 0.0032904184631855, 0.1885677166674841, 0.0285271524764669,
+    #                          0.0012114713963756, 0.0058249053810193, 0.1421154126428439, 0.0080642043112130])
+    # sim_moments = get_moments(fv, process_num)
