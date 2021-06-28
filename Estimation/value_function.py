@@ -10,9 +10,11 @@ import pandas as pd
 from pandas import DataFrame
 import numpy as np
 
+from quantecon.markov.approximation import tauchen
+
 from Constants.constants import Constants
 from Constants.parameters import Parameters as parameters
-from Utilities import generate_profitability_distribution, get_range, inter_product
+from Utilities import get_range, inter_product, generate_profitability_distribution
 
 
 class FirmValue(Constants):
@@ -62,8 +64,8 @@ class FirmValue(Constants):
         self._theta = theta if theta is not None else parameters.theta_
         self._sigma = sigma if sigma is not None else parameters.sigma_
         self._lambda = lambda_ if lambda_ is not None else parameters.lambda_
-        self._profitability_grid, self._transition_matrix = generate_profitability_distribution(self._mu, self._rho,
-                                                                                                self._sigma, self.Z_NUM)
+        self._profitability_grid, self._transition_matrix = generate_profitability_distribution(
+            self._mu, self._rho, self._sigma, self.Z_NUM)
 
         self._debt_grid = get_range(-self._theta, self._theta, self.P_NUM)
         self._investment_grid = get_range(self._delta * (2 - np.ceil(self.I_NUM / (2 * self.DELP))),
@@ -99,7 +101,7 @@ class FirmValue(Constants):
                     expected_fv_prime[ip, :] = expected_fv[ipd, :]
                 else:
                     frac = (self._debt_grid[ipu] - self._debt_prime_grid[ip]) / (
-                                self._debt_grid[ipu] - self._debt_grid[ipd])
+                            self._debt_grid[ipu] - self._debt_grid[ipd])
                     # print(frac)
                     expected_fv_prime[ip, :] = expected_fv[ipd, :] * frac + expected_fv[ipu, :] * (1 - frac)
 

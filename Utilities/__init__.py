@@ -21,15 +21,13 @@ def generate_profitability_distribution(mu, rho, sigma, number):
     """
     f1 = np.zeros((number, number))
     f2 = np.ones((number, number))
-    z = np.zeros(number)
     m = 2
 
-    s2 = sigma ** 2
-    sy = np.sqrt(s2 / (1 - rho ** 2))
-    for i in range(number):
-        z[i] = -m * sy + ((2 * m * sy) / (number - 1) * i)
+    sy = sigma / np.sqrt(1 - rho ** 2)
 
-    w = z[2] - z[1]
+    z = get_range(-m * sy, m * sy, number)
+
+    w = z[1] - z[0]
     for j in range(number):
         for i in range(1, number):
             minif = (z[i] - rho * z[j] - w / 2) / sigma
@@ -37,8 +35,6 @@ def generate_profitability_distribution(mu, rho, sigma, number):
             f2[i - 1, j] = 0.5 * (1 + erf(minif / np.sqrt(2)))
 
     z += mu
-    f1 = f1
-    f2 = f2
     trans = f2 - f1
     return np.exp(z), trans
 
@@ -78,7 +74,6 @@ def inter_product(target_val, base_series):
         fraction = (base_series[up_index] - target_val) / (base_series[up_index] - base_series[low_index])
 
         return fraction, low_index, up_index
-
 
 
 if __name__ == '__main__':

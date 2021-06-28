@@ -77,7 +77,7 @@ def criterion(params, *args):
     mu, rho, sigma, delta, gamma, theta, lambda_ = params
     process_num: int = args[0]
     fv = FirmValue(delta=delta, mu=mu, rho=rho, sigma=sigma, theta=theta, lambda_=lambda_, gamma=gamma)
-    error_code = fv.optimize_terry()
+    error_code = fv.optimize()
     if error_code != 0:
         return 1e18
     data_moments = np.array([0.0768111297195329, 0.0032904184631855, 0.1885677166674841, 0.0285271524764669,
