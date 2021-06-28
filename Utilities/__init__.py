@@ -37,8 +37,8 @@ def generate_profitability_distribution(mu, rho, sigma, number):
             f2[i - 1, j] = 0.5 * (1 + erf(minif / np.sqrt(2)))
 
     z += mu
-    f1 = f1.T
-    f2 = f2.T
+    f1 = f1
+    f2 = f2
     trans = f2 - f1
     return np.exp(z), trans
 
