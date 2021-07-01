@@ -79,7 +79,7 @@ def criterion(params, *args):
     fv = FirmValue(delta=delta, mu=mu, rho=rho, sigma=sigma, theta=theta, lambda_=lambda_, gamma=gamma)
     error_code = fv.optimize()
     if error_code != 0:
-        return 1e18
+        return 10
     data_moments = np.array([0.0768111297195329, 0.0032904184631855, 0.1885677166674841, 0.0285271524764669,
                              0.0012114713963756, 0.0058249053810193, 0.1421154126428439, 0.0080642043112130])
     sim_moments = get_moments(fv, process_num)
