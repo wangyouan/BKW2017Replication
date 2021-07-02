@@ -10,16 +10,14 @@ import numpy as np
 import pandas as pd
 import scipy.optimize as opt
 from pandas import DataFrame
-import pathos
 
 from Estimation.value_function import FirmValue
 
 
-def get_moments(fv: FirmValue, process_num: int = 1):
+def get_moments(fv: FirmValue):
     """
     Simulate model and return moments
     :param fv: an optimized firm value
-    :param process_num: number of multiprocessing number
     :return: a list [mean investment, var investment, mean leverage, var leverage, mean payoff, var payoff,
                      mean profit, var profit]
         0.0768111297195329
@@ -100,7 +98,7 @@ if __name__ == '__main__':
     #                           bounds=(
     #                               (-6.5, -0.5), (0.3, 0.9), (0.05, 0.6), (0.01, 0.2), (3, 30), (0.1, 0.7),
     #                               (0.01, 0.25)))
-    results1_1 = opt.dual_annealing(criterion, args=(1,), x0=params_init_1,
+    results1_1 = opt.dual_annealing(criterion, x0=params_init_1,
                                     bounds=(
                                         (-3.5, -1.5), (0.8, 0.9), (0.3, 0.4), (0.01, 0.05), (25, 30), (0.1, 0.4),
                                         (0.01, 0.25)))
