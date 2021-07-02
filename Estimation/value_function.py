@@ -68,9 +68,8 @@ class FirmValue(Constants):
             self._mu, self._rho, self._sigma, self.Z_NUM)
 
         self._debt_grid = get_range(-self._theta, self._theta, self.P_NUM)
-        self._investment_grid = get_range(self._delta * (2 - np.ceil(self.I_NUM / (2 * self.DELP))),
-                                          self._delta * (2 + np.ceil(self.I_NUM / (2 * self.DELP))),
-                                          self.I_NUM)
+        min_i = self._delta * (2 - np.ceil(self.I_NUM / (2 * self.DELP)))
+        self._investment_grid = get_range(min_i, min_i + (self.I_NUM - 1) * self._delta / self.DELP, self.I_NUM)
         self._debt_prime_grid = get_range(-self._theta, self._theta, self.P_NEXT_NUM)
         self._firm_value = np.zeros((self.P_NUM, self.Z_NUM))
         self._debt_policy_matrix = np.zeros((self.P_NUM, self.Z_NUM), dtype=int)
@@ -136,7 +135,7 @@ class FirmValue(Constants):
                                                             current_value_firm.shape)
                 self._debt_policy_matrix[ip, iz] = debt_max_i
                 self._invest_policy_matrix[ip, iz] = invest_max_i
-                return 0
+        return 0
 
     def optimize_terry(self):
         """
@@ -281,26 +280,24 @@ class FirmValue(Constants):
             payoff
         """
         # initialize
-        init_value = np.random.random(firms)
-        profit_index = [int(i * self.Z_NUM) for i in init_value]
-        debt_index = [int(i * self.P_NUM) for i in init_value]
+        # init_value = np.random.random(firms)
+        np.random.seed(1000)
+        profit_index = [int(i * self.Z_NUM) for i in np.random.random(firms)]
+        debt_index = [int(i * self.P_NUM) for i in np.random.random(firms)]
         value_array = [self._firm_value[debt_index[i], profit_index[i]] for i in range(firms)]
         investment_array = [self._investment_grid[self._invest_policy_matrix[debt_index[i], profit_index[i]]] for i in
                             range(firms)]
-        debt_array = [self._debt_grid[int(i * self.P_NUM)] for i in init_value]
+        debt_array = self._debt_grid[debt_index]
         trans_cdf = self._transition_matrix.copy()
 
-        for i in range(self.Z_NUM - 2):
-            trans_cdf[:, i + 1] += trans_cdf[:, i]
-
-        trans_cdf[:, self.Z_NUM - 1] = 1
+        for i in range(self.Z_NUM - 1):
+            trans_cdf[i + 1, :] += trans_cdf[i, :]
 
         # run simulation
         simulated_data_list = list()
         for year_i in range(years):
-            simulated_data = DataFrame(
-                columns=['value', 'profitability', 'debt', 'investment', 'payoff', 'debt_prime'],
-                index=list(range(firms)))
+            simulated_data = DataFrame(columns=['value', 'profitability', 'debt', 'investment', 'payoff', 'debt_prime'],
+                                       index=list(range(firms)))
 
             simulated_data.loc[:, 'profitability'] = self._profitability_grid[profit_index]
             simulated_data.loc[:, 'debt'] = debt_array
@@ -314,20 +311,22 @@ class FirmValue(Constants):
                 debt = simulated_data.loc[i, 'debt']
 
                 # determine next period values
-                cfrac, low_index, up_index = inter_product(debt_array[i], self._debt_grid)
-                profit_index[i] = len(trans_cdf[profit_index[i]][trans_cdf[profit_index[i]] < next_shock[i]])
-                debt_prime_up = self._debt_prime_grid[self._debt_policy_matrix[up_index, profit_index[i]]]
-                debt_prime_low = self._debt_prime_grid[self._debt_policy_matrix[low_index, profit_index[i]]]
-                invest_prime_up = self._investment_grid[self._invest_policy_matrix[up_index, profit_index[i]]]
-                invest_prime_low = self._investment_grid[self._invest_policy_matrix[low_index, profit_index[i]]]
+                cfrac, low_index, up_index = inter_product(debt, self._debt_grid)
+                trans_matrix = trans_cdf[:, profit_index[i]]
+                current_profit_index = profit_index[i]
+                debt_prime_up = self._debt_prime_grid[self._debt_policy_matrix[up_index, current_profit_index]]
+                debt_prime_low = self._debt_prime_grid[self._debt_policy_matrix[low_index, current_profit_index]]
+                invest_prime_up = self._investment_grid[self._invest_policy_matrix[up_index, current_profit_index]]
+                invest_prime_low = self._investment_grid[self._invest_policy_matrix[low_index, current_profit_index]]
 
                 debt_array[i] = cfrac * debt_prime_low + (1 - cfrac) * debt_prime_up
-                value_array[i] = cfrac * self._firm_value[low_index, profit_index[i]] + (1 - cfrac) \
-                                 * self._firm_value[up_index, profit_index[i]]
+                value_array[i] = cfrac * self._firm_value[low_index, current_profit_index] + (1 - cfrac) \
+                                 * self._firm_value[up_index, current_profit_index]
                 investment_array[i] = cfrac * invest_prime_low + (1 - cfrac) * invest_prime_up
 
                 simulated_data.loc[i, 'payoff'] = self.get_payoff(profitability, investment_array[i], debt,
                                                                   debt_array[i])
+                profit_index[i] = len(trans_matrix[trans_matrix < next_shock[i]])
 
             simulated_data.loc[:, 'year'] = year_i
             simulated_data.loc[:, 'firm_id'] = list(range(firms))
@@ -343,7 +342,7 @@ if __name__ == '__main__':
     mu, rho, sigma, delta, gamma, theta, lambda_ = -2.2067, 0.8349, 0.3594, 0.0449, 29.9661, 0.3816, 0.1829
     fv = FirmValue(delta=delta, rho=rho, mu=mu, gamma=gamma, theta=theta, sigma=sigma, lambda_=lambda_)
     error_code = fv.optimize()
-    sim_data = fv.simulate_model(58, 1)
+    sim_data = fv.simulate_model(58, 900)
 
     # test generate payoff function
     # theta = 0.4177055908170345

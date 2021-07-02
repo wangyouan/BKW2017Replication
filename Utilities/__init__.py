@@ -6,6 +6,7 @@
 # @Author: Mark Wang
 # @Email: markwang@connect.hku.hk
 
+from pandas import DataFrame
 import numpy as np
 from scipy.special import erf
 
@@ -74,6 +75,53 @@ def inter_product(target_val, base_series):
         fraction = (base_series[up_index] - target_val) / (base_series[up_index] - base_series[low_index])
 
         return fraction, low_index, up_index
+
+
+def get_payoff_full(profit, investment, current_debt, next_debt, gamma_, rf_, delta_, lambda__):
+    payoff = profit - investment - 0.5 * gamma_ * (investment ** 2) - current_debt * (1 + rf_) \
+             + next_debt * (1 - delta_ + investment)
+
+    if payoff < 0:
+        payoff *= (1 + lambda__)
+
+    return payoff
+
+
+def get_firm_value(firm_id, init_profit_index, init_debt_index, firm_value_grid, debt_grid, profit_grid,
+                   debt_prime_grid, debt_policy_grid, invest_grid, invest_policy_grid, gamma_, rf_, delta_,
+                   lambda__, years, trans_cdf):
+    result_df = DataFrame(columns=['year', 'firm_id', 'value', 'profitability', 'debt', 'investment', 'payoff'])
+    current_debt = debt_grid[init_debt_index]
+    current_profit_index = init_profit_index
+    for year in range(years):
+        index = result_df.shape[0]
+        current_profit = profit_grid[current_profit_index]
+        result_df.loc[index, 'year'] = year
+        result_df.loc[index, 'debt'] = current_debt
+        result_df.loc[index, 'profitability'] = current_profit
+
+        # determine next period values
+        cfrac, low_index, up_index = inter_product(current_debt, debt_grid)
+        trans_matrix = trans_cdf[:, current_profit_index]
+        debt_prime_up = debt_prime_grid[debt_policy_grid[up_index, current_profit_index]]
+        debt_prime_low = debt_prime_grid[debt_policy_grid[low_index, current_profit_index]]
+        invest_prime_up = invest_grid[invest_policy_grid[up_index, current_profit_index]]
+        invest_prime_low = invest_grid[invest_policy_grid[low_index, current_profit_index]]
+
+        next_debt = cfrac * debt_prime_low + (1 - cfrac) * debt_prime_up
+        result_df.loc[index, 'value'] = cfrac * firm_value_grid[low_index, current_profit_index] + (1 - cfrac) \
+                                        * firm_value_grid[up_index, current_profit_index]
+        result_df.loc[index, 'investment'] = cfrac * invest_prime_low + (1 - cfrac) * invest_prime_up
+
+        result_df.loc[index, 'payoff'] = get_payoff_full(current_profit, result_df.loc[index, 'investment'],
+                                                         current_debt, next_debt, gamma_, rf_, delta_,
+                                                         lambda__)
+        next_shock = np.random.random()
+        current_profit_index = len(trans_matrix[trans_matrix < next_shock])
+        current_debt = next_debt
+
+    result_df.loc[:, 'firm_id'] = firm_id
+    return result_df
 
 
 if __name__ == '__main__':
