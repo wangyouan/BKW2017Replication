@@ -31,7 +31,7 @@ def get_moments(fv: FirmValue):
 
     """
     sim_data: DataFrame = fv.simulate_model(years=FirmValue.N_YEARS, firms=FirmValue.N_FIRMS)
-    sim_data_valid: DataFrame = sim_data.iloc[sim_data['year'] >= 50].copy()
+    sim_data_valid: DataFrame = sim_data.loc[sim_data['year'] >= 50].copy()
     result_series = np.zeros(8)
     mean_data = sim_data_valid.mean()
     var_data = sim_data_valid.var()
