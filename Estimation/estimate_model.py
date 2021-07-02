@@ -55,7 +55,6 @@ def get_moments_error(data_mom, sim_mom, weighted_matrix):
 
 def criterion(params, *args):
     mu, rho, sigma, delta, gamma, theta, lambda_ = params
-    process_num: int = args[0]
     fv = FirmValue(delta=delta, mu=mu, rho=rho, sigma=sigma, theta=theta, lambda_=lambda_, gamma=gamma)
     error_code = fv.optimize()
     if error_code != 0:
