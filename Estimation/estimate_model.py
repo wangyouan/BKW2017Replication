@@ -85,7 +85,7 @@ def criterion(params, *args):
                               [-9.21241100e-03, 1.29062300e-03, 6.81779000e-04,
                                1.48138000e-04, -1.36726600e-03, 3.97526000e-04,
                                -3.28985000e-04, 1.28965600e-03]])
-    sim_moments = get_moments(fv, process_num)
+    sim_moments = get_moments(fv)
     moments_error = get_moments_error(data_moments, sim_moments, weight_matrix)
     print('Moments errors are:', moments_error)
     return moments_error
