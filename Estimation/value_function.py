@@ -282,8 +282,9 @@ class FirmValue(Constants):
         # initialize
         # init_value = np.random.random(firms)
         np.random.seed(1000)
-        profit_index = [int(i * self.Z_NUM) for i in np.random.random(firms)]
-        debt_index = [int(i * self.P_NUM) for i in np.random.random(firms)]
+        random_profitability = np.random.random((firms, years + 1))
+        profit_index = [int(i * self.Z_NUM) for i in random_profitability[:, 0]]
+        debt_index = [int(i * self.P_NUM) for i in random_profitability[:, 0]]
         value_array = [self._firm_value[debt_index[i], profit_index[i]] for i in range(firms)]
         investment_array = [self._investment_grid[self._invest_policy_matrix[debt_index[i], profit_index[i]]] for i in
                             range(firms)]
@@ -304,7 +305,7 @@ class FirmValue(Constants):
             simulated_data.loc[:, 'value'] = value_array
 
             # get next period profitability
-            next_shock = np.random.random(firms)
+            next_shock = random_profitability[:, year_i + 1]
             for i in range(firms):
                 # save current data
                 profitability = simulated_data.loc[i, 'profitability']
