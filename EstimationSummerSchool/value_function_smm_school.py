@@ -47,8 +47,7 @@ class FirmValue(object):
                     z = self._profitability.state_values[iz]
                     k = self._capital_grid[ik]
                     k_prime = self._capital_grid[ik_prime]
-                    payout_grid[ik, ik_prime, iz] = z * \
-                                                    k ** self._alpha - k_prime + (1 - self._delta) * k
+                    payout_grid[ik, ik_prime, iz] = z * (k ** self._alpha) - k_prime + (1 - self._delta) * k
 
         payout_grid = np.where(payout_grid > 0, payout_grid,
                                (1 + self._lambda) * payout_grid)
@@ -91,11 +90,12 @@ class FirmValue(object):
 
         for year in range(n_years):
             current_trans = cdf[profit_index, :]
-            simulated_data = DataFrame(
-                columns=['firm_id', 'year', 'capital', 'inv_rate', 'profitability', 'firm_value'])
-            simulated_data.loc[:, 'firm_value'] = value_array
+            simulated_data = DataFrame(columns=['firm_id', 'year', 'capital', 'inv_rate', 'profitability', 'value'])
+            simulated_data.loc[:, 'value'] = value_array
             simulated_data.loc[:, 'capital'] = self._capital_grid[capital_index]
             simulated_data.loc[:, 'profitability'] = self._profitability.state_values[profit_index]
+            simulated_data.loc[:, 'profitability'] *= simulated_data.loc[:, 'capital'].apply(
+                lambda x: x ** (self._alpha - 1))
             capital_policy = np.array(
                 [self._capital_policy_grid[capital_index[i], profit_index[i]] for i in range(n_firms)])
             investment = self._capital_grid[capital_policy] - (1 - self._delta) * simulated_data.loc[:, 'capital']
@@ -105,7 +105,7 @@ class FirmValue(object):
             simulated_data.loc[:, 'year'] = year
             simulated_data_list.append(simulated_data)
 
-            capital_index = capital_policy
+            capital_index = capital_policy.copy()
             profit_shock_series = profit_shock[:, year]
 
             profit_index = np.array(
