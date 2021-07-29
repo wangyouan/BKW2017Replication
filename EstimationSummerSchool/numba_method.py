@@ -11,15 +11,8 @@ import numba as nb
 import pandas as pd
 from pandas import DataFrame
 
-# define some constants
-NUM_PROFITABILITY = 15
-NUM_CAPITAL = 250
-CAPITAL_MIN = 0.5
-CAPITAL_MAX = 250
-
-MAX_ITERATION = 3000
-CONVERAGE_THRESHOLD = 1e-5
-MAX_DIFF_THRESHOLD = 1e8
+from EstimationSummerSchool import NUM_PROFITABILITY, NUM_CAPITAL, MAX_ITERATION, CONVERAGE_THRESHOLD, \
+    MAX_DIFF_THRESHOLD
 
 
 @nb.jit(nopython=True, parallel=False)

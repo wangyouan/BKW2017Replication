@@ -18,11 +18,9 @@ import scipy.optimize as opt
 import numpy as np
 import pandas as pd
 from pandas import DataFrame
-from EstimationSummerSchool.value_function_smm_school import FirmValue
 
-NUM_SIMULATED_FIRMS = 11169
-NUM_SIMULATED_YEARS = 93
-NUM_ESTIMATED_YEARS = 43
+from EstimationSummerSchool.value_function_smm_school import FirmValue
+from EstimationSummerSchool import NUM_SIMULATED_FIRMS, NUM_SIMULATED_YEARS, NUM_ESTIMATED_YEARS
 
 
 def calculate_moments(data_df):
@@ -45,10 +43,12 @@ def criterion(params, *args):
     data_moments, weight_matrix = args
     error_code = fv.optimize()
     if error_code != 0:
-        return 10
+        return 1e4
 
     simulated_data: DataFrame = fv.simulate_model(n_firms=NUM_SIMULATED_FIRMS, n_years=NUM_SIMULATED_YEARS)
-    sim_moments = calculate_moments(simulated_data)
+    simulated_data2: DataFrame = simulated_data[
+        simulated_data['year'] >= (NUM_SIMULATED_YEARS - NUM_ESTIMATED_YEARS)].copy()
+    sim_moments = calculate_moments(simulated_data2)
 
     moment_diff = sim_moments - data_moments
     moments_error = moment_diff.T @ weight_matrix @ moment_diff
@@ -61,5 +61,5 @@ if __name__ == '__main__':
     data_moments = [0.071978, 0.074367, 0.131125, 0.136623]
 
     results1_1 = opt.dual_annealing(criterion, x0=params_init_1, args=(data_moments, np.eye(4)),
-                                    bounds=((0, 1), (0.01, 0.25)))
+                                    bounds=((0, 1), (0.01, 0.25)), maxiter=100)
     print(results1_1)
