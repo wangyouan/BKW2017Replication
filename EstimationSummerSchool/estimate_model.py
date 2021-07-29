@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# @Filename: estimate_model
+# @Date: 2021/7/29
+# @Author: Mark Wang
+# @Email: markwang@connect.hku.hk
+
+"""
+use mean and standard deviation of investment and profitability as moments
+
+python -m EstimationSummerSchool.estimate_model
+"""
+
+import os
+
+import scipy.optimize as opt
+import numpy as np
+import pandas as pd
+from pandas import DataFrame
+from EstimationSummerSchool.value_function_smm_school import FirmValue
+
+NUM_SIMULATED_FIRMS = 11169
+NUM_SIMULATED_YEARS = 93
+NUM_ESTIMATED_YEARS = 43
+
+
+def calculate_moments(data_df):
+    mean_df = data_df.mean()
+    std_df = data_df.std()
+
+    data_moments = np.zeros(4)
+    data_moments[0] = mean_df['inv_rate']
+    data_moments[1] = std_df['inv_rate']
+    data_moments[2] = mean_df['profitability']
+    data_moments[3] = std_df['profitability']
+
+    return data_moments
+
+
+def criterion(params, *args):
+    alpha, delta = params
+    fv = FirmValue(delta=delta, alpha=alpha)
+
+    data_moments, weight_matrix = args
+    error_code = fv.optimize()
+    if error_code != 0:
+        return 10
+
+    simulated_data: DataFrame = fv.simulate_model(n_firms=NUM_SIMULATED_FIRMS, n_years=NUM_SIMULATED_YEARS)
+    sim_moments = calculate_moments(simulated_data)
+
+    moment_diff = sim_moments - data_moments
+    moments_error = moment_diff.T @ weight_matrix @ moment_diff
+    print('Moments errors are:', moments_error)
+    return moments_error
+
+
+if __name__ == '__main__':
+    params_init_1 = np.array([0.8349, 0.0449])
+    data_moments = [0.071978, 0.074367, 0.131125, 0.136623]
+
+    results1_1 = opt.dual_annealing(criterion, x0=params_init_1, args=(data_moments, np.eye(4)),
+                                    bounds=((0, 1), (0.01, 0.25)))
+    print(results1_1)

@@ -11,6 +11,8 @@ import pandas as pd
 from pandas import DataFrame
 from quantecon import tauchen
 
+from EstimationSummerSchool.numba_method import optimize, simulate_model
+
 # define some constants
 NUM_PROFITABILITY = 15
 NUM_CAPITAL = 250
@@ -40,43 +42,32 @@ class FirmValue(object):
 
     def optimize(self):
         # initialize payout grid
-        payout_grid = np.zeros((NUM_CAPITAL, NUM_CAPITAL, NUM_PROFITABILITY))
-        for ik in range(NUM_CAPITAL):
-            for ik_prime in range(NUM_CAPITAL):
-                for iz in range(NUM_PROFITABILITY):
-                    z = self._profitability.state_values[iz]
-                    k = self._capital_grid[ik]
-                    k_prime = self._capital_grid[ik_prime]
-                    payout_grid[ik, ik_prime, iz] = z * (k ** self._alpha) - k_prime + (1 - self._delta) * k
+        error_code, firm_value, all_firm_value = optimize(self._alpha, self._delta, self._lambda, self._beta,
+                                                          self._profitability.state_values, self._profitability.P,
+                                                          self._capital_grid, self._firm_value)
+        if error_code == 0:
+            self._firm_value = firm_value.copy()
+            self._capital_policy_grid = np.argmax(all_firm_value, axis=1)
 
-        payout_grid = np.where(payout_grid > 0, payout_grid,
-                               (1 + self._lambda) * payout_grid)
-
-        firm_value = self._firm_value.copy()
-        for _ in range(MAX_ITERATION):
-            firm_value_prime = firm_value @ self._profitability.P
-
-            all_firm_value = np.zeros((NUM_CAPITAL, NUM_CAPITAL, NUM_PROFITABILITY))
-            for ik in range(NUM_CAPITAL):
-                all_firm_value[ik, :, :] = payout_grid[ik, :, :] + self._beta * firm_value_prime
-
-            new_firm_value = np.max(all_firm_value, axis=1)
-
-            model_difference = np.max(np.abs(new_firm_value - firm_value))
-            if model_difference > MAX_DIFF_THRESHOLD:
-                print('Cannot converage')
-                return 1
-            elif model_difference < CONVERAGE_THRESHOLD:
-                self._firm_value = new_firm_value.copy()
-                self._capital_policy_grid = np.argmax(all_firm_value, axis=1)
-                return 0
-
-            firm_value = new_firm_value.copy()
-
-        else:
-            return 2
+        return error_code
 
     def simulate_model(self, n_firms, n_years):
+        simulated_results = simulate_model(self._delta, n_firms, n_years, self._firm_value,
+                                           self._profitability.state_values, self._profitability.cdfs,
+                                           self._capital_grid, self._capital_policy_grid)
+        simulated_result = np.vstack(simulated_results)
+
+        simulated_df = DataFrame(simulated_result,
+                                 columns=['firm_id', 'year', 'capital', 'investment', 'inv_rate', 'profitability',
+                                          'value'])
+        simulated_df.loc[:, 'inv_rate'] = simulated_df['investment'] / simulated_df.loc[:, 'capital']
+        simulated_df.loc[:, 'profitability'] *= simulated_df.loc[:, 'capital'].apply(lambda x: x ** (self._alpha - 1))
+        for key in ['firm_id', 'year']:
+            simulated_df.loc[:, key] = simulated_df[key].astype(int)
+
+        return simulated_df
+
+    def simulate_model_old(self, n_firms, n_years):
         np.random.seed(1000)
         initial_state = np.random.random((n_firms, 2))
         profit_shock = np.random.random((n_firms, n_years))
@@ -116,6 +107,13 @@ class FirmValue(object):
 
 
 if __name__ == '__main__':
+    import time
+
+    print(time.time())
+    # for _ in range(1):
     fv = FirmValue(0.6, 0.04)
     error_code = fv.optimize()
-    simulated_data = fv.simulate_model(1000, 58)
+    print(time.time())
+    simulated_data = fv.simulate_model(11169, 93)
+
+    print(time.time())
