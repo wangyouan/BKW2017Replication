@@ -11,8 +11,8 @@ import pandas as pd
 from pandas import DataFrame
 from quantecon import tauchen
 
-from EstimationSummerSchool.numba_method import optimize, simulate_model
-from EstimationSummerSchool import NUM_PROFITABILITY, NUM_CAPITAL, CAPITAL_MAX, CAPITAL_MIN
+from EstimationSummerSchool.numba_method import optimize, simulate_model, optimizeinv
+from EstimationSummerSchool import NUM_PROFITABILITY, NUM_CAPITAL, CAPITAL_MAX, CAPITAL_MIN, NUM_INVESTMENT
 
 
 class FirmValue(object):
@@ -95,6 +95,28 @@ class FirmValue(object):
 
         simulated_data_df: DataFrame = pd.concat(simulated_data_list, ignore_index=True, sort=False)
         return simulated_data_df
+
+
+class FirmValueInv(FirmValue):
+    def __init__(self, alpha, delta):
+        FirmValue.__init__(self, alpha, delta)
+        min_i = self._delta * (2 - np.ceil(NUM_INVESTMENT / 8))
+        max_i = min_i + (NUM_INVESTMENT - 1) * self._delta / 4
+        self._investment_grid = np.arange(min_i, max_i, (max_i - min_i) / NUM_INVESTMENT)
+        self._investment_policy = np.zeros((NUM_CAPITAL, NUM_PROFITABILITY))
+        delattr(self, '_capital_policy_grid')
+
+    def optimize(self):
+        # initialize payout grid
+        error_code, firm_value, all_firm_value = optimizeinv(self._alpha, self._delta, self._lambda, self._beta,
+                                                             self._profitability.state_values, self._profitability.P,
+                                                             self._capital_grid, self._investment_grid,
+                                                             self._firm_value)
+        if error_code == 0:
+            self._firm_value = firm_value.copy()
+            self._investment_policy = np.argmax(all_firm_value, axis=1)
+
+        return error_code
 
 
 if __name__ == '__main__':

@@ -12,7 +12,7 @@ import pandas as pd
 from pandas import DataFrame
 
 from EstimationSummerSchool import NUM_PROFITABILITY, NUM_CAPITAL, MAX_ITERATION, CONVERAGE_THRESHOLD, \
-    MAX_DIFF_THRESHOLD
+    MAX_DIFF_THRESHOLD, NUM_INVESTMENT, CAPITAL_MAX
 
 
 @nb.jit(nopython=True, parallel=False)
@@ -28,11 +28,34 @@ def optimize(alpha, delta, lambda_, beta, p_state, p_trans, capital_grid, firm_v
                 payout_grid[ik, ik_prime, iz] = z * (k ** alpha) - k_prime + (1 - delta) * k
 
     payout_grid = np.where(payout_grid > 0, payout_grid, (1 + lambda_) * payout_grid)
+    return optimize_firm_value(beta, firm_value, p_trans, payout_grid)
 
+
+@nb.jit(nopython=True, parallel=False)
+def optimizeinv(alpha, delta, lambda_, beta, p_state, p_trans, capital_grid, investment_grid, firm_value):
+    # initialize payout grid
+    payout_grid = np.zeros((NUM_CAPITAL, NUM_INVESTMENT, NUM_PROFITABILITY))
+    for ik in range(NUM_CAPITAL):
+        for ii in range(NUM_INVESTMENT):
+            for iz in range(NUM_PROFITABILITY):
+                z = p_state[iz]
+                k = capital_grid[ik]
+                i_rate = investment_grid[ii]
+                k_prime = k * (i_rate + 1 - delta)
+                if k_prime > CAPITAL_MAX:
+                    i_rate = CAPITAL_MAX / k - 1 + delta
+                payout_grid[ik, ii, iz] = z * (k ** alpha) - i_rate * k
+
+    payout_grid = np.where(payout_grid > 0, payout_grid, (1 + lambda_) * payout_grid)
+    return optimize_firm_value(beta, firm_value, p_trans, payout_grid)
+
+
+@nb.jit(nopython=True)
+def optimize_firm_value(beta, firm_value, p_trans, payout_grid):
     for _ in range(MAX_ITERATION):
         firm_value_prime = firm_value @ p_trans
 
-        all_firm_value = np.zeros((NUM_CAPITAL, NUM_CAPITAL, NUM_PROFITABILITY))
+        all_firm_value = np.zeros((NUM_CAPITAL, NUM_INVESTMENT, NUM_PROFITABILITY))
         for ik in range(NUM_CAPITAL):
             all_firm_value[ik, :, :] = payout_grid[ik, :, :] + beta * firm_value_prime
 

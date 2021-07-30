@@ -12,28 +12,13 @@ use mean and standard deviation of investment and profitability as moments
 python -m EstimationSummerSchool.estimate_model
 """
 
-import os
-
 import scipy.optimize as opt
 import numpy as np
-import pandas as pd
 from pandas import DataFrame
 
+from EstimationSummerSchool.get_data_moments import calculate_moments
 from EstimationSummerSchool.value_function_smm_school import FirmValue
 from EstimationSummerSchool import NUM_SIMULATED_FIRMS, NUM_SIMULATED_YEARS, NUM_ESTIMATED_YEARS
-
-
-def calculate_moments(data_df):
-    mean_df = data_df.mean()
-    std_df = data_df.std()
-
-    data_moments = np.zeros(4)
-    data_moments[0] = mean_df['inv_rate']
-    data_moments[1] = std_df['inv_rate']
-    data_moments[2] = mean_df['profitability']
-    data_moments[3] = std_df['profitability']
-
-    return data_moments
 
 
 def criterion(params, *args):
