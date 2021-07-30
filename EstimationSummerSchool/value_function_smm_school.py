@@ -11,7 +11,7 @@ import pandas as pd
 from pandas import DataFrame
 from quantecon import tauchen
 
-from EstimationSummerSchool.numba_method import optimize, simulate_model, optimizeinv
+from EstimationSummerSchool.numba_method import optimize, simulate_model, optimizeinv, simulate_model_invest
 from EstimationSummerSchool import NUM_PROFITABILITY, NUM_CAPITAL, CAPITAL_MAX, CAPITAL_MIN, NUM_INVESTMENT
 
 
@@ -118,13 +118,28 @@ class FirmValueInv(FirmValue):
 
         return error_code
 
+    def simulate_model(self, n_firms, n_years):
+        simulated_results = simulate_model_invest(self._delta, n_firms, n_years, self._firm_value,
+                                                  self._profitability.state_values, self._profitability.cdfs,
+                                                  self._capital_grid, self._investment_grid, self._investment_policy)
+        simulated_result = np.vstack(simulated_results)
+        simulated_df = DataFrame(simulated_result,
+                                 columns=['firm_id', 'year', 'capital', 'investment', 'inv_rate', 'profitability',
+                                          'value'])
+        simulated_df.loc[:, 'investment'] = simulated_df['inv_rate'] * simulated_df.loc[:, 'capital']
+        simulated_df.loc[:, 'profitability'] *= simulated_df.loc[:, 'capital'].apply(lambda x: x ** (self._alpha - 1))
+        for key in ['firm_id', 'year']:
+            simulated_df.loc[:, key] = simulated_df[key].astype(int)
+
+        return simulated_df
+
 
 if __name__ == '__main__':
     import time
 
     print(time.time())
     # for _ in range(1):
-    fv = FirmValue(0.6, 0.04)
+    fv = FirmValueInv(0.6, 0.04)
     error_code = fv.optimize()
     print(time.time())
     simulated_data = fv.simulate_model(11169, 93)
