@@ -17,13 +17,13 @@ import numpy as np
 from pandas import DataFrame
 
 from EstimationSummerSchool.get_data_moments import calculate_moments
-from EstimationSummerSchool.value_function_smm_school import FirmValue
+from EstimationSummerSchool.value_function_smm_school import FirmValueInv
 from EstimationSummerSchool import NUM_SIMULATED_FIRMS, NUM_SIMULATED_YEARS, NUM_ESTIMATED_YEARS
 
 
 def criterion(params, *args):
     alpha, delta = params
-    fv = FirmValue(delta=delta, alpha=alpha)
+    fv = FirmValueInv(delta=delta, alpha=alpha)
 
     data_moments, weight_matrix = args
     error_code = fv.optimize()

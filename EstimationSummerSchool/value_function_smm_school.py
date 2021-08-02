@@ -108,13 +108,13 @@ class FirmValueInv(FirmValue):
 
     def optimize(self):
         # initialize payout grid
-        error_code, firm_value, all_firm_value = optimizeinv(self._alpha, self._delta, self._lambda, self._beta,
-                                                             self._profitability.state_values, self._profitability.P,
-                                                             self._capital_grid, self._investment_grid,
-                                                             self._firm_value)
+        error_code, firm_value, new_policy = optimizeinv(self._alpha, self._delta, self._lambda, self._beta,
+                                                         self._profitability.state_values, self._profitability.P,
+                                                         self._capital_grid, self._investment_grid,
+                                                         self._firm_value)
         if error_code == 0:
             self._firm_value = firm_value.copy()
-            self._investment_policy = np.argmax(all_firm_value, axis=1)
+            self._investment_policy = new_policy.copy()
 
         return error_code
 
