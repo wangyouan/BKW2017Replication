@@ -41,4 +41,10 @@ if __name__ == '__main__':
                                                            profitability_mean=mean_df['profitability'])
     data_moments = calculate_moments(data_df2)
 
+    if_df: DataFrame = data_df2[['firm_id', 'year']].copy()
+    if_df.loc[:, 'if_mean_profit'] = data_df2['profitability'] - data_moments[2]
+    if_df.loc[:, 'if_var_profit'] = if_df['if_mean_profit'].apply(lambda x: x ** 2) - data_moments[3] ** 2
+    if_df.loc[:, 'if_mean_inv_rate'] = data_df2['inv_rate'] - data_moments[0]
+    if_df.loc[:, 'if_var_inv_rate'] = if_df['if_mean_inv_rate'].apply(lambda x: x ** 2) - data_moments[1] ** 2
 
+    smm_matrix = np.linalg.inv(if_df.iloc[:,-4:].cov())

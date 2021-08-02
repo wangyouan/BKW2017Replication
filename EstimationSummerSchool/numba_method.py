@@ -119,7 +119,7 @@ def optimizeinv(alpha, delta, lambda_, beta, p_state, p_trans, capital_grid, inv
         invest_policy_grid = new_invest_policy.copy()
 
     else:
-        return 2, firm_value, np.zeros((NUM_CAPITAL, NUM_PROFITABILITY))
+        return 2, firm_value, np.zeros((NUM_CAPITAL, NUM_PROFITABILITY), dtype=np.int32)
 
 
 @nb.jit(nopython=True, parallel=False)
