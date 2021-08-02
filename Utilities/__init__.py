@@ -8,6 +8,7 @@
 
 from pandas import DataFrame
 import numpy as np
+import numba as nb
 from scipy.special import erf
 
 
@@ -57,6 +58,7 @@ def get_range(min_val, max_val, number):
     return result_series
 
 
+@nb.jit(nopython=True, parallel=False)
 def inter_product(target_val, base_series):
     """
     the inter product value would be, cfraction * series[low_index] + (1 - cfraction) * series[up_index]

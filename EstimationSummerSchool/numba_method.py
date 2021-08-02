@@ -54,7 +54,7 @@ def optimize(alpha, delta, lambda_, beta, p_state, p_trans, capital_grid, firm_v
         return 2, firm_value, np.zeros((NUM_CAPITAL, NUM_CAPITAL, NUM_PROFITABILITY))
 
 
-# @nb.jit(nopython=True)
+@nb.jit(nopython=True, parallel=False)
 def optimizeinv(alpha, delta, lambda_, beta, p_state, p_trans, capital_grid, investment_grid, firm_value):
     # initialize payout grid
     payout_grid = np.zeros((NUM_CAPITAL, NUM_INVESTMENT, NUM_PROFITABILITY))
