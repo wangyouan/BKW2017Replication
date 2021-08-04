@@ -47,4 +47,11 @@ if __name__ == '__main__':
     if_df.loc[:, 'if_mean_inv_rate'] = data_df2['inv_rate'] - data_moments[0]
     if_df.loc[:, 'if_var_inv_rate'] = if_df['if_mean_inv_rate'].apply(lambda x: x ** 2) - data_moments[1] ** 2
 
-    smm_matrix = np.linalg.inv(if_df.iloc[:,-4:].cov())
+    smm_matrix = np.linalg.inv(if_df.iloc[:, -4:].cov())
+
+    import statsmodels.api as sm
+
+    cef_reg = sm.OLS(if_df['year'],
+                     if_df[['if_mean_profit', 'if_var_profit', 'if_mean_inv_rate', 'if_var_inv_rate']]).fit(
+        cov_type='cluster', cov_kwds={'groups': if_df['firm_id']})
+    smm_matrix2 = cef_reg.cov_params() / cef_reg.scale

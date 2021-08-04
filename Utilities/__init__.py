@@ -10,6 +10,7 @@ from pandas import DataFrame
 import numpy as np
 import numba as nb
 from scipy.special import erf
+import pandas as pd
 
 
 def generate_profitability_distribution(mu, rho, sigma, number):
@@ -124,6 +125,21 @@ def get_firm_value(firm_id, init_profit_index, init_debt_index, firm_value_grid,
 
     result_df.loc[:, 'firm_id'] = firm_id
     return result_df
+
+
+def get_cluster_cov(X, group):
+    hessian_inv = np.linalg.inv(X.T @ X)
+    clusters = np.unique(group)
+    group = pd.factorize(group)[0]
+    x_group_sums = np.array([np.bincount(group, weights=X[:, col])
+                             for col in range(X.shape[1])]).T
+    scale = np.dot(x_group_sums.T, x_group_sums)
+    nobs, k_params = X.shape
+    n_groups = len(clusters)
+    cov_c = np.dot(np.dot(hessian_inv, scale), hessian_inv.T)
+    cov_c *= (n_groups / (n_groups - 1.) *
+              ((nobs - 1.) / float(nobs - k_params)))
+    return cov_c
 
 
 if __name__ == '__main__':
