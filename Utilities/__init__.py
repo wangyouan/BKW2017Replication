@@ -128,18 +128,15 @@ def get_firm_value(firm_id, init_profit_index, init_debt_index, firm_value_grid,
 
 
 def get_cluster_cov(X, group):
-    hessian_inv = np.linalg.inv(X.T @ X)
-    clusters = np.unique(group)
+    """ Source BKW2018 equation 23 """
     group = pd.factorize(group)[0]
+    X = np.asarray(X)
     x_group_sums = np.array([np.bincount(group, weights=X[:, col])
                              for col in range(X.shape[1])]).T
     scale = np.dot(x_group_sums.T, x_group_sums)
-    nobs, k_params = X.shape
-    n_groups = len(clusters)
-    cov_c = np.dot(np.dot(hessian_inv, scale), hessian_inv.T)
-    cov_c *= (n_groups / (n_groups - 1.) *
-              ((nobs - 1.) / float(nobs - k_params)))
-    return cov_c
+    nobs = X.shape[0]
+
+    return scale / nobs
 
 
 if __name__ == '__main__':
