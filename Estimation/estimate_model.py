@@ -97,7 +97,7 @@ if __name__ == '__main__':
     #                           bounds=(
     #                               (-6.5, -0.5), (0.3, 0.9), (0.05, 0.6), (0.01, 0.2), (3, 30), (0.1, 0.7),
     #                               (0.01, 0.25)))
-    results1_1 = opt.dual_annealing(criterion, x0=params_init_1,
+    results1_1 = opt.dual_annealing(criterion, x0=params_init_1, maxiter=100,
                                     bounds=(
                                         (-3.5, -1.5), (0.8, 0.9), (0.3, 0.4), (0.01, 0.05), (25, 30), (0.1, 0.4),
                                         (0.01, 0.25)))
