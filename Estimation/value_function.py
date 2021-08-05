@@ -57,6 +57,9 @@ class FirmValue(Constants):
 
         self.initialize(delta, rho, mu, gamma, theta, sigma, lambda_)
 
+    def get_parameter_array(self):
+        return np.array([self._mu, self._rho, self._sigma, self._delta, self._gamma, self._theta, self._lambda])
+
     def initialize(self, delta=None, rho=None, mu=None, gamma=None, theta=None, sigma=None, lambda_=None):
         self._delta = delta if delta is not None else parameters.delta_
         self._rho = rho if rho is not None else parameters.rho_
