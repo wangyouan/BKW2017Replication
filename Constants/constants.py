@@ -23,8 +23,9 @@ class Constants(object):
     P_NEXT_NUM = 64
     I_NUM = 61
 
-    N_FIRMS = 900
+    N_FIRMS = 93750
     N_YEARS = 58
+    N_SIMULATION = 50
 
     # parameters for maximize value iteration
     MAX_ITERATION = 3000

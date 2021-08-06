@@ -273,7 +273,7 @@ if __name__ == '__main__':
     mu, rho, sigma, delta, gamma, theta, lambda_ = -2.2067, 0.8349, 0.3594, 0.0449, 29.9661, 0.3816, 0.1829
     fv = FirmValue(delta=delta, rho=rho, mu=mu, gamma=gamma, theta=theta, sigma=sigma, lambda_=lambda_)
     error_code = fv.optimize()
-    sim_data = fv.simulate_model(58, 900)
+    sim_data = fv.simulate_model(fv.N_YEARS, 1)
 
     # test generate payoff function
     # theta = 0.4177055908170345

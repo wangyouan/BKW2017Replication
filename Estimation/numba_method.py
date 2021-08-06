@@ -29,16 +29,8 @@ def optimize_model(delta, beta, firm_value, payoff, transition_matrix, debt_grid
         expected_fv = np.dot(firm_value, transition_matrix)
         expected_fv_prime = np.zeros((p_next_num, z_num))
         for ip in nb.prange(p_next_num):
-            ipd = int(ip * (p_num - 1) / (p_next_num - 1))
-            ipu = ipd + 1
-
-            if ipu >= p_num:
-                ipd = p_num - 1
-                expected_fv_prime[ip, :] = expected_fv[ipd, :]
-            else:
-                frac = (debt_grid[ipu] - debt_prime_grid[ip]) / (debt_grid[ipu] - debt_grid[ipd])
-                # print(frac)
-                expected_fv_prime[ip, :] = expected_fv[ipd, :] * frac + expected_fv[ipu, :] * (1 - frac)
+            cfrac, ipd, ipu = inter_product(debt_prime_grid[ip], debt_grid)
+            expected_fv_prime[ip, :] = expected_fv[ipd, :] * cfrac + expected_fv[ipu, :] * (1 - cfrac)
 
         for i in range(i_num):
             queue_i[:, i, :] = expected_fv_prime * (1 - delta + investment_grid[i])
@@ -92,11 +84,11 @@ def simulated_model(n_firms, n_years, firm_value, debt_grid, debt_prime_grid, de
                     random_profitability_state):
     p_num, z_num, p_next_num, i_num, max_iteration = int_constant_array
     gamma, delta, rf_rate, lambda_ = float_constant_array
-    profit_index = [int(i * z_num) for i in random_profitability_state[:, 0]]
-    debt_index = [int(i * p_num) for i in random_profitability_state[:, 0]]
-    value_array = [firm_value[debt_index[i], profit_index[i]] for i in range(n_firms)]
-    investment_array = [investment_grid[invest_policy_matrix[debt_index[i], profit_index[i]]] for i in
-                        range(n_firms)]
+    profit_index = np.array([int(i * z_num) for i in random_profitability_state[:, 0]])
+    debt_index = np.array([int(i * p_num) for i in random_profitability_state[:, 0]])
+    value_array = np.array([firm_value[debt_index[i], profit_index[i]] for i in range(n_firms)])
+    investment_array = np.array([investment_grid[invest_policy_matrix[debt_index[i], profit_index[i]]] for i in
+                                 range(n_firms)])
     debt_array = np.array([debt_grid[ik] for ik in debt_index])
     trans_cdf = transition_matrix.copy()
 
@@ -139,6 +131,6 @@ def simulated_model(n_firms, n_years, firm_value, debt_grid, debt_prime_grid, de
             simulated_data[i, 4] = payoff if payoff > 0 else (1 + lambda_) * payoff
             profit_index[i] = len(trans_matrix[trans_matrix < next_shock[i]])
 
-        simulated_data[:, 4] = investment_array
+        simulated_data[:, 3] = investment_array
         simulated_data_list.append(simulated_data)
     return simulated_data_list

@@ -6,12 +6,44 @@
 # @Author: Mark Wang
 # @Email: markwang@connect.hku.hk
 
+
+"""
+     fun: 0.00043080615655367713
+ message: ['Maximum number of iteration reached']
+    nfev: 3097
+    nhev: 0
+     nit: 100
+    njev: 212
+  status: 0
+ success: True
+       x: array([-2.25597919,  0.84899213,  0.36075207,  0.0470482 , 29.7260005 , 0.19591638,  0.03514085])
+"""
+
 import numpy as np
 import pandas as pd
 import scipy.optimize as opt
 from pandas import DataFrame
 
 from Estimation.value_function import FirmValue
+
+data_moments = np.array([0.1885677166674841, 0.0285271524764669, 0.0768111297195329, 0.0032904184631855,
+                         0.0012114713963756, 0.0058249053810193, 0.1421154126428439, 0.0080642043112130])
+weight_matrix = np.array([[1.10970812e+00, -5.45373300e-03, 5.73558990e-02, 4.00641400e-03, -1.10963740e-02,
+                           -7.19755100e-03, 5.64500000e-03, -9.21241100e-03],
+                          [-5.45373300e-03, 1.72861350e-02, -4.43486000e-04, 2.97896000e-04, -2.85893600e-03,
+                           1.05785900e-03, -3.14452800e-03, 1.29062300e-03],
+                          [5.73558990e-02, -4.43486000e-04, 5.08293810e-02, 3.39974400e-03, -5.32097800e-03,
+                           6.54373000e-04, 2.51933490e-02, 6.81779000e-04],
+                          [4.00641400e-03, 2.97896000e-04, 3.39974400e-03, 4.21314000e-04, -8.45842000e-04,
+                           1.28310000e-04, 7.18566000e-04, 1.48138000e-04],
+                          [-1.10963740e-02, -2.85893600e-03, -5.32097800e-03, -8.45842000e-04, 3.38320220e-02,
+                           -3.81671500e-03, 3.74180570e-02, -1.36726600e-03],
+                          [-7.19755100e-03, 1.05785900e-03, 6.54373000e-04, 1.28310000e-04, -3.81671500e-03,
+                           1.23323600e-03, -2.44482600e-03, 3.97526000e-04],
+                          [5.64500000e-03, -3.14452800e-03, 2.51933490e-02, 7.18566000e-04, 3.74180570e-02,
+                           -2.44482600e-03, 1.21059595e-01, -3.28985000e-04],
+                          [-9.21241100e-03, 1.29062300e-03, 6.81779000e-04, 1.48138000e-04, -1.36726600e-03,
+                           3.97526000e-04, -3.28985000e-04, 1.28965600e-03]])
 
 
 def get_moments(fv: FirmValue):
@@ -31,7 +63,7 @@ def get_moments(fv: FirmValue):
 
     """
     sim_data: DataFrame = fv.simulate_model(years=FirmValue.N_YEARS, firms=FirmValue.N_FIRMS)
-    sim_data_valid: DataFrame = sim_data.loc[sim_data['year'] >= 50].copy()
+    sim_data_valid: DataFrame = sim_data.loc[sim_data['year'] >= FirmValue.N_SIMULATION].copy()
     result_series = np.zeros(8)
     mean_data = sim_data_valid.mean()
     var_data = sim_data_valid.var()
@@ -59,31 +91,7 @@ def criterion(params, *args):
     error_code = fv.optimize()
     if error_code != 0:
         return 10
-    data_moments = np.array([0.1885677166674841, 0.0285271524764669, 0.0768111297195329, 0.0032904184631855,
-                             0.0012114713963756, 0.0058249053810193, 0.1421154126428439, 0.0080642043112130])
-    weight_matrix = np.array([[1.10970812e+00, -5.45373300e-03, 5.73558990e-02, 4.00641400e-03, -1.10963740e-02,
-                               -7.19755100e-03, 5.64500000e-03, -9.21241100e-03],
-                              [-5.45373300e-03, 1.72861350e-02, -4.43486000e-04,
-                               2.97896000e-04, -2.85893600e-03, 1.05785900e-03,
-                               -3.14452800e-03, 1.29062300e-03],
-                              [5.73558990e-02, -4.43486000e-04, 5.08293810e-02,
-                               3.39974400e-03, -5.32097800e-03, 6.54373000e-04,
-                               2.51933490e-02, 6.81779000e-04],
-                              [4.00641400e-03, 2.97896000e-04, 3.39974400e-03,
-                               4.21314000e-04, -8.45842000e-04, 1.28310000e-04,
-                               7.18566000e-04, 1.48138000e-04],
-                              [-1.10963740e-02, -2.85893600e-03, -5.32097800e-03,
-                               -8.45842000e-04, 3.38320220e-02, -3.81671500e-03,
-                               3.74180570e-02, -1.36726600e-03],
-                              [-7.19755100e-03, 1.05785900e-03, 6.54373000e-04,
-                               1.28310000e-04, -3.81671500e-03, 1.23323600e-03,
-                               -2.44482600e-03, 3.97526000e-04],
-                              [5.64500000e-03, -3.14452800e-03, 2.51933490e-02,
-                               7.18566000e-04, 3.74180570e-02, -2.44482600e-03,
-                               1.21059595e-01, -3.28985000e-04],
-                              [-9.21241100e-03, 1.29062300e-03, 6.81779000e-04,
-                               1.48138000e-04, -1.36726600e-03, 3.97526000e-04,
-                               -3.28985000e-04, 1.28965600e-03]])
+
     sim_moments = get_moments(fv)
     moments_error = get_moments_error(data_moments, sim_moments, weight_matrix)
     print('Moments errors are:', moments_error)
@@ -142,40 +150,15 @@ def calculate_gradient_matrix(fv):
 
 def get_standard_error(fv, sample_size):
     gradient_matrix = calculate_gradient_matrix(fv)
-    data_moments = np.array([0.1885677166674841, 0.0285271524764669, 0.0768111297195329, 0.0032904184631855,
-                             0.0012114713963756, 0.0058249053810193, 0.1421154126428439, 0.0080642043112130])
-    weight_matrix = np.array([[1.10970812e+00, -5.45373300e-03, 5.73558990e-02, 4.00641400e-03, -1.10963740e-02,
-                               -7.19755100e-03, 5.64500000e-03, -9.21241100e-03],
-                              [-5.45373300e-03, 1.72861350e-02, -4.43486000e-04,
-                               2.97896000e-04, -2.85893600e-03, 1.05785900e-03,
-                               -3.14452800e-03, 1.29062300e-03],
-                              [5.73558990e-02, -4.43486000e-04, 5.08293810e-02,
-                               3.39974400e-03, -5.32097800e-03, 6.54373000e-04,
-                               2.51933490e-02, 6.81779000e-04],
-                              [4.00641400e-03, 2.97896000e-04, 3.39974400e-03,
-                               4.21314000e-04, -8.45842000e-04, 1.28310000e-04,
-                               7.18566000e-04, 1.48138000e-04],
-                              [-1.10963740e-02, -2.85893600e-03, -5.32097800e-03,
-                               -8.45842000e-04, 3.38320220e-02, -3.81671500e-03,
-                               3.74180570e-02, -1.36726600e-03],
-                              [-7.19755100e-03, 1.05785900e-03, 6.54373000e-04,
-                               1.28310000e-04, -3.81671500e-03, 1.23323600e-03,
-                               -2.44482600e-03, 3.97526000e-04],
-                              [5.64500000e-03, -3.14452800e-03, 2.51933490e-02,
-                               7.18566000e-04, 3.74180570e-02, -2.44482600e-03,
-                               1.21059595e-01, -3.28985000e-04],
-                              [-9.21241100e-03, 1.29062300e-03, 6.81779000e-04,
-                               1.48138000e-04, -1.36726600e-03, 3.97526000e-04,
-                               -3.28985000e-04, 1.28965600e-03]])
-    simulation_size = fv.N_SIMULATION * fv.N_FIRMS
-    num_mom = fv.get_number_of_moments()
+    simulation_size = FirmValue.N_FIRMS * (FirmValue.N_YEARS - FirmValue.N_SIMULATION)
+    num_mom = len(data_moments)
 
     model_diff = get_moments(fv) - data_moments
-    return get_standard_error_matrix(gradient_matrix, weight_matrix, sample_size, simulation_size, num_mom=num_mom,
+    return get_standard_error_matrix(gradient_matrix, sample_size, simulation_size, num_mom=num_mom,
                                      model_diff=model_diff)
 
 
-def get_standard_error_matrix(gradient_matrix, weight_matrix, sample_size, simulation_size, num_mom, model_diff):
+def get_standard_error_matrix(gradient_matrix, sample_size, simulation_size, num_mom, model_diff):
     w_matrix = np.linalg.inv(weight_matrix)
     gwg_matrix = gradient_matrix.T @ w_matrix @ gradient_matrix
     igwg_matrix = np.linalg.inv(gwg_matrix)
