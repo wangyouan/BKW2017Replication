@@ -54,14 +54,14 @@ def optimize(alpha, delta, lambda_, beta, p_state, p_trans, capital_grid, firm_v
         return 2, firm_value, np.zeros((NUM_CAPITAL, NUM_CAPITAL, NUM_PROFITABILITY))
 
 
-@nb.jit(nopython=True, parallel=False)
+@nb.jit(nopython=True, parallel=True)
 def optimizeinv(alpha, delta, lambda_, beta, p_state, p_trans, capital_grid, investment_grid, firm_value):
     # initialize payout grid
     payout_grid = np.zeros((NUM_CAPITAL, NUM_INVESTMENT, NUM_PROFITABILITY))
 
-    for ik in range(NUM_CAPITAL):
-        for ii in range(NUM_INVESTMENT):
-            for iz in range(NUM_PROFITABILITY):
+    for ik in nb.prange(NUM_CAPITAL):
+        for ii in nb.prange(NUM_INVESTMENT):
+            for iz in nb.prange(NUM_PROFITABILITY):
                 z = p_state[iz]
                 k = capital_grid[ik]
                 i_rate = investment_grid[ii]
@@ -77,19 +77,19 @@ def optimizeinv(alpha, delta, lambda_, beta, p_state, p_trans, capital_grid, inv
     # guess a invest policy
     invest_policy_grid = np.ones((NUM_CAPITAL, NUM_PROFITABILITY), dtype=np.int32)
 
-    for _ in range(MAX_ITERATION):
+    for _ in nb.prange(MAX_ITERATION):
 
         # push forward the capital policy 50 times
         new_firm_value = firm_value.copy()
-        for __ in range(50):
-            for ik in range(NUM_CAPITAL):
-                for iz in range(NUM_PROFITABILITY):
+        for __ in nb.prange(50):
+            for ik in nb.prange(NUM_CAPITAL):
+                for iz in nb.prange(NUM_PROFITABILITY):
                     ii = invest_policy_grid[ik, iz]
                     new_firm_value[ik, iz] = payout_grid[ik, ii, iz]
                     k_prime = min(max(capital_grid[ik] * (1 - delta + investment_grid[ii]), CAPITAL_MIN), CAPITAL_MAX)
                     cfrac, up_ik, low_ik = inter_product(k_prime, capital_grid)
 
-                    for iz_prime in range(NUM_PROFITABILITY):
+                    for iz_prime in nb.prange(NUM_PROFITABILITY):
                         new_firm_value[ik, iz] += beta * p_trans[iz, iz_prime] * (
                                 cfrac * firm_value[low_ik, iz_prime] + (1 - cfrac) * firm_value[up_ik, iz_prime])
 
@@ -97,15 +97,15 @@ def optimizeinv(alpha, delta, lambda_, beta, p_state, p_trans, capital_grid, inv
 
         new_firm_value = firm_value.copy()
         new_invest_policy = invest_policy_grid.copy()
-        for ik in range(NUM_CAPITAL):
-            for iz in range(NUM_PROFITABILITY):
+        for ik in nb.prange(NUM_CAPITAL):
+            for iz in nb.prange(NUM_PROFITABILITY):
                 rhs = np.zeros(NUM_INVESTMENT)
-                for ii in range(NUM_INVESTMENT):
+                for ii in nb.prange(NUM_INVESTMENT):
                     rhs[ii] = payout_grid[ik, ii, iz]
                     inv_rate = investment_grid[ii]
                     k_prime = min(max(capital_grid[ik] * (1 - delta + inv_rate), CAPITAL_MIN), CAPITAL_MAX)
                     cfrac, up_ik, low_ik = inter_product(k_prime, capital_grid)
-                    for iz_prime in range(NUM_PROFITABILITY):
+                    for iz_prime in nb.prange(NUM_PROFITABILITY):
                         rhs[ii] += beta * p_trans[iz, iz_prime] * (
                                 cfrac * firm_value[low_ik, iz_prime] + (1 - cfrac) * firm_value[up_ik, iz_prime])
                 new_firm_value[ik, iz] = np.max(rhs)
@@ -133,7 +133,7 @@ def simulate_model(delta, n_firms, n_years, firm_value, p_state, p_cdfs, capital
                            dtype=np.float32)
 
     simulated_data_list = list()
-    for year in range(n_years):
+    for year in nb.prange(n_years):
         current_trans = p_cdfs[profit_index, :]
         simulated_data = np.zeros((n_firms, 7))
         simulated_data[:, 6] = value_array
@@ -172,14 +172,14 @@ def simulate_model_invest(delta, n_firms, n_years, firm_value, p_state, p_cdfs, 
     capital_array = capital_grid[capital_index]
 
     simulated_data_list = list()
-    for year in range(n_years):
+    for year in nb.prange(n_years):
         simulated_data = np.zeros((n_firms, 7))
         simulated_data[:, 6] = value_array
         simulated_data[:, 5] = p_state[profit_index]
         simulated_data[:, 2] = capital_array
         invest_array = np.zeros(n_firms)
 
-        for firm_id in range(n_firms):
+        for firm_id in nb.prange(n_firms):
             k = capital_array[firm_id]
 
             up_ik, low_ik = inner_plot(capital_grid, k)
