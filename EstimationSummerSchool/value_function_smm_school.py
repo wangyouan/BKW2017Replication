@@ -26,8 +26,16 @@ class FirmValue(object):
 
         self._profitability = tauchen(self._rho, self._sigma, m=2, n=NUM_PROFITABILITY)
         self._profitability.state_values = np.exp(self._profitability.state_values)
-        self._capital_grid = np.arange(CAPITAL_MIN, CAPITAL_MAX, (CAPITAL_MAX - CAPITAL_MIN) / NUM_CAPITAL,
-                                       dtype=np.float32)
+        capital_min = 0.5 * (alpha * self._profitability.state_values[0] * self._beta
+                             / (1 - (1 - delta) * self._beta)) ** (1 / (1 - alpha))
+        capital_max = (alpha * self._profitability.state_values[-1] * self._beta
+                       / (1 - (1 - delta) * self._beta)) ** (1 / (1 - alpha))
+        try:
+            self._capital_grid = np.arange(capital_min, capital_max, (capital_max - capital_min) / NUM_CAPITAL,
+                                           dtype=np.float32)
+        except ValueError as e:
+            print(self._alpha, self._beta)
+            raise ValueError(e)
         self._firm_value = np.zeros((NUM_CAPITAL, NUM_PROFITABILITY))
         self._capital_policy_grid = np.zeros((NUM_CAPITAL, NUM_PROFITABILITY))
 

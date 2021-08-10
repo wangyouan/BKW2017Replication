@@ -17,13 +17,13 @@ import numpy as np
 from pandas import DataFrame
 
 from EstimationSummerSchool.get_data_moments import calculate_moments
-from EstimationSummerSchool.value_function_smm_school import FirmValueInv
+from EstimationSummerSchool.value_function_smm_school import FirmValue
 from EstimationSummerSchool import NUM_SIMULATED_FIRMS, NUM_SIMULATED_YEARS, NUM_ESTIMATED_YEARS
 
 
 def criterion(params, *args):
     alpha, delta = params
-    fv = FirmValueInv(delta=delta, alpha=alpha)
+    fv = FirmValue(delta=delta, alpha=alpha)
 
     data_moments, weight_matrix = args
     error_code = fv.optimize()
@@ -43,8 +43,8 @@ def criterion(params, *args):
 
 if __name__ == '__main__':
     params_init_1 = np.array([0.8349, 0.0449])
-    data_moments = [0.071978, 0.074367, 0.131125, 0.136623]
+    data_moments = [0.07197835, 0.05077249, 0.13112528, 0.0865349]
 
     results1_1 = opt.dual_annealing(criterion, x0=params_init_1, args=(data_moments, np.eye(4)),
-                                    bounds=((0, 1), (0.01, 0.25)), maxiter=100)
+                                    bounds=((0.01, 0.99), (0.01, 0.25)), maxiter=100)
     print(results1_1)
