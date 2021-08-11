@@ -16,13 +16,13 @@ from EstimationSummerSchool import NUM_PROFITABILITY, NUM_CAPITAL, beta, rho, si
 
 
 class FirmValue(object):
-    def __init__(self, alpha, delta):
+    def __init__(self, alpha, delta, beta_=beta, rho_=rho, sigma_z=sigma, lambda__=lambda_):
         self._alpha = alpha
         self._delta = delta
-        self._beta = beta
-        self._rho = rho
-        self._sigma = sigma
-        self._lambda = lambda_
+        self._beta = beta_
+        self._rho = rho_
+        self._sigma = sigma_z
+        self._lambda = lambda__
 
         self._profitability = tauchen(self._rho, self._sigma, m=2, n=NUM_PROFITABILITY)
         self._profitability.state_values = np.exp(self._profitability.state_values)
@@ -31,8 +31,7 @@ class FirmValue(object):
         capital_max = (alpha * self._profitability.state_values[-1] * self._beta
                        / (1 - (1 - delta) * self._beta)) ** (1 / (1 - alpha))
         try:
-            self._capital_grid = np.arange(capital_min, capital_max, (capital_max - capital_min) / NUM_CAPITAL,
-                                           dtype=np.float32)
+            self._capital_grid = np.linspace(capital_min, capital_max, NUM_CAPITAL, endpoint=True, dtype=np.float32)
         except ValueError as e:
             print(self._alpha, self._beta)
             raise ValueError(e)
@@ -57,8 +56,7 @@ class FirmValue(object):
         simulated_result = np.vstack(simulated_results)
 
         simulated_df = DataFrame(simulated_result,
-                                 columns=['firm_id', 'year', 'capital', 'investment', 'inv_rate', 'profitability',
-                                          'value'])
+                                 columns=['firm_id', 'year', 'capital', 'investment', 'inv_rate', 'profitability'])
         simulated_df.loc[:, 'inv_rate'] = simulated_df['investment'] / simulated_df.loc[:, 'capital']
         simulated_df.loc[:, 'profitability'] *= simulated_df.loc[:, 'capital'].apply(lambda x: x ** (self._alpha - 1))
         for key in ['firm_id', 'year']:

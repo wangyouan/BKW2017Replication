@@ -31,9 +31,8 @@ def criterion(params, *args):
         return 1e4
 
     simulated_data: DataFrame = fv.simulate_model(n_firms=NUM_SIMULATED_FIRMS, n_years=NUM_SIMULATED_YEARS)
-    simulated_data2: DataFrame = simulated_data[
-        simulated_data['year'] >= (NUM_SIMULATED_YEARS - NUM_ESTIMATED_YEARS)].copy()
-    sim_moments = calculate_moments(simulated_data2)
+    sim_moments = calculate_moments(
+        simulated_data[simulated_data['year'] >= (NUM_SIMULATED_YEARS - NUM_ESTIMATED_YEARS)])
 
     moment_diff = sim_moments - data_moments
     moments_error = moment_diff.T @ weight_matrix @ moment_diff
@@ -43,7 +42,7 @@ def criterion(params, *args):
 
 if __name__ == '__main__':
     params_init_1 = np.array([0.8349, 0.0449])
-    data_moments = [0.07197835, 0.05077249, 0.13112528, 0.0865349]
+    data_moments = np.array([0.07197835, 0.00257785, 0.13112528, 0.00748829])
 
     results1_1 = opt.dual_annealing(criterion, x0=params_init_1, args=(data_moments, np.eye(4)),
                                     bounds=((0.01, 0.99), (0.01, 0.25)), maxiter=100)

@@ -21,4 +21,4 @@ NUM_ESTIMATED_YEARS = 10
 beta = 0.96
 rho = 0.75
 sigma = 0.3
-lambda_ = 0.05
+lambda_ = 0.04
