@@ -11,18 +11,18 @@ import pandas as pd
 from pandas import DataFrame
 from quantecon import tauchen
 
-from EstimationSummerSchool.numba_method import optimize, simulate_model, optimizeinv, simulate_model_invest
-from EstimationSummerSchool import NUM_PROFITABILITY, NUM_CAPITAL, CAPITAL_MAX, CAPITAL_MIN, NUM_INVESTMENT
+from EstimationSummerSchool.numba_method import optimize, simulate_model
+from EstimationSummerSchool import NUM_PROFITABILITY, NUM_CAPITAL, beta, rho, sigma, lambda_
 
 
 class FirmValue(object):
     def __init__(self, alpha, delta):
         self._alpha = alpha
         self._delta = delta
-        self._beta = 0.96
-        self._rho = 0.75
-        self._sigma = 0.3
-        self._lambda = 0.05
+        self._beta = beta
+        self._rho = rho
+        self._sigma = sigma
+        self._lambda = lambda_
 
         self._profitability = tauchen(self._rho, self._sigma, m=2, n=NUM_PROFITABILITY)
         self._profitability.state_values = np.exp(self._profitability.state_values)
@@ -103,53 +103,3 @@ class FirmValue(object):
 
         simulated_data_df: DataFrame = pd.concat(simulated_data_list, ignore_index=True, sort=False)
         return simulated_data_df
-
-
-class FirmValueInv(FirmValue):
-    def __init__(self, alpha, delta):
-        FirmValue.__init__(self, alpha, delta)
-        min_i = self._delta * (2 - np.ceil(NUM_INVESTMENT / 8))
-        max_i = min_i + (NUM_INVESTMENT - 1) * self._delta / 4
-        self._investment_grid = np.arange(min_i, max_i, (max_i - min_i) / NUM_INVESTMENT)
-        self._investment_policy = np.zeros((NUM_CAPITAL, NUM_PROFITABILITY))
-        delattr(self, '_capital_policy_grid')
-
-    def optimize(self):
-        # initialize payout grid
-        error_code, firm_value, new_policy = optimizeinv(self._alpha, self._delta, self._lambda, self._beta,
-                                                         self._profitability.state_values, self._profitability.P,
-                                                         self._capital_grid, self._investment_grid,
-                                                         self._firm_value)
-        if error_code == 0:
-            self._firm_value = firm_value.copy()
-            self._investment_policy = new_policy.copy()
-
-        return error_code
-
-    def simulate_model(self, n_firms, n_years):
-        simulated_results = simulate_model_invest(self._delta, n_firms, n_years, self._firm_value,
-                                                  self._profitability.state_values, self._profitability.cdfs,
-                                                  self._capital_grid, self._investment_grid, self._investment_policy)
-        simulated_result = np.vstack(simulated_results)
-        simulated_df = DataFrame(simulated_result,
-                                 columns=['firm_id', 'year', 'capital', 'investment', 'inv_rate', 'profitability',
-                                          'value'])
-        simulated_df.loc[:, 'investment'] = simulated_df['inv_rate'] * simulated_df.loc[:, 'capital']
-        simulated_df.loc[:, 'profitability'] *= simulated_df.loc[:, 'capital'].apply(lambda x: x ** (self._alpha - 1))
-        for key in ['firm_id', 'year']:
-            simulated_df.loc[:, key] = simulated_df[key].astype(int)
-
-        return simulated_df
-
-
-if __name__ == '__main__':
-    import time
-
-    print(time.time())
-    # for _ in range(1):
-    fv = FirmValueInv(0.6, 0.04)
-    error_code = fv.optimize()
-    print(time.time())
-    simulated_data = fv.simulate_model(11169, 93)
-
-    print(time.time())

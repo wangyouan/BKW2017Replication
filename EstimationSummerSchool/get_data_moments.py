@@ -17,13 +17,17 @@ from Utilities import get_cluster_cov
 
 def calculate_moments(data_df):
     mean_df = data_df.mean()
-    std_df = data_df.std()
+    group_mean = data_df.groupby('firm_id')[['inv_rate', 'profitability']].mean().reset_index(drop=False)
+    data_df2: DataFrame = data_df.merge(group_mean, on=['firm_id'], suffixes=['', '_mean'])
+    data_df2.loc[:, 'inv_rate_demean'] = data_df2['inv_rate'] - data_df2['inv_rate_mean']
+    data_df2.loc[:, 'profitability_demean'] = data_df2['profitability'] - data_df2['profitability_mean']
+    var_df = data_df2.var()
 
     data_moments = np.zeros(4)
     data_moments[0] = mean_df['inv_rate']
-    data_moments[1] = std_df['inv_rate']
+    data_moments[1] = var_df['inv_rate_demean']
     data_moments[2] = mean_df['profitability']
-    data_moments[3] = std_df['profitability']
+    data_moments[3] = var_df['profitability_demean']
 
     return data_moments
 
