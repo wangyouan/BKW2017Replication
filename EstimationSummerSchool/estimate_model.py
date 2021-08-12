@@ -18,7 +18,7 @@ from pandas import DataFrame
 
 from EstimationSummerSchool.get_data_moments import calculate_moments
 from EstimationSummerSchool.value_function_smm_school import FirmValue
-from EstimationSummerSchool import NUM_SIMULATED_FIRMS, NUM_SIMULATED_YEARS, NUM_ESTIMATED_YEARS
+from EstimationSummerSchool import NUM_SIMULATED_FIRMS, NUM_SIMULATED_YEARS, NUM_ESTIMATED_YEARS, NUM_SIMULATION
 
 
 def criterion(params, *args):
@@ -30,13 +30,16 @@ def criterion(params, *args):
     if error_code != 0:
         return 1e4
 
-    simulated_data: DataFrame = fv.simulate_model(n_firms=NUM_SIMULATED_FIRMS, n_years=NUM_SIMULATED_YEARS)
-    sim_moments = calculate_moments(
-        simulated_data[simulated_data['year'] >= (NUM_SIMULATED_YEARS - NUM_ESTIMATED_YEARS)])
+    sim_moments = np.zeros_like(data_moments)
+    for n_sum in range(NUM_SIMULATION):
+        simulated_data: DataFrame = fv.simulate_model(n_firms=NUM_SIMULATED_FIRMS, n_years=NUM_SIMULATED_YEARS,
+                                                      seed=n_sum)
+        sim_moments += calculate_moments(
+            simulated_data[simulated_data['year'] >= (NUM_SIMULATED_YEARS - NUM_ESTIMATED_YEARS)])
 
-    moment_diff = sim_moments - data_moments
+    moment_diff = sim_moments / NUM_SIMULATION - data_moments
     moments_error = moment_diff.T @ weight_matrix @ moment_diff
-    print('Moments errors are:', moments_error)
+    print('Moments errors are:', moments_error, 'Parameters are', alpha, delta)
     return moments_error
 
 

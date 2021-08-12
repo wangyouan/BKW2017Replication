@@ -53,8 +53,8 @@ def optimize(alpha, delta, lambda_, beta, p_state, p_trans, capital_grid, firm_v
 
 
 @nb.jit(nopython=True, parallel=False)
-def simulate_model(delta, n_firms, n_years, firm_value, p_state, p_cdfs, capital_grid, capital_policy_grid):
-    np.random.seed(1000)
+def simulate_model(delta, n_firms, n_years, seed, p_state, p_cdfs, capital_grid, capital_policy_grid):
+    np.random.seed(seed)
     initial_state = np.random.random((n_firms, 2))
     profit_shock = np.random.random((n_firms, n_years))
     profit_index = np.array([int(i * NUM_PROFITABILITY) for i in initial_state[:, 0]], dtype=np.int64)
@@ -91,40 +91,40 @@ def simulate_model(delta, n_firms, n_years, firm_value, p_state, p_cdfs, capital
         simulated_data_list.append(simulated_data)
     return simulated_data_list
 
-
-def simulate_model_backup(alpha, delta, n_firms, n_years, firm_value, p_state, p_cdfs, capital_grid,
-                          capital_policy_grid):
-    np.random.seed(1000)
-    initial_state = np.random.random((n_firms, 2))
-    profit_shock = np.random.random((n_firms, n_years))
-    profit_index = np.array([int(i * NUM_PROFITABILITY) for i in initial_state[:, 0]], dtype=np.int64)
-    capital_index = np.array([int(i * NUM_CAPITAL) for i in initial_state[:, 1]], dtype=np.int64)
-    value_array = np.array([firm_value[capital_index[i], profit_index[i]] for i in range(n_firms)],
-                           dtype=np.float32)
-
-    simulated_data = np.zeros((n_firms * n_years, 7), dtype=np.float32)
-    for year in range(n_years):
-        current_trans = p_cdfs[profit_index, :]
-        simulated_data[year * n_firms: (year + 1) * n_firms, 6] = value_array
-        simulated_data[year * n_firms: (year + 1) * n_firms, 2] = capital_grid[capital_index]
-        simulated_data[year * n_firms: (year + 1) * n_firms, 5] = p_state[profit_index]
-        capital_policy = np.array(
-            [capital_policy_grid[capital_index[i], profit_index[i]] for i in range(n_firms)])
-        simulated_data[year * n_firms: (year + 1) * n_firms, 3] = \
-            capital_grid[capital_policy] - (1 - delta) * simulated_data[year * n_firms: (year + 1) * n_firms, 2]
-
-        simulated_data[year * n_firms: (year + 1) * n_firms, 0] = np.arange(n_firms)
-        simulated_data[year * n_firms: (year + 1) * n_firms, 1] = np.float(year)
-
-        capital_index = capital_policy.copy()
-        profit_shock_series = profit_shock[:, year]
-
-        profit_index = np.array(
-            [len(current_trans[i][current_trans[i] < profit_shock_series[i]]) for i in range(n_firms)])
-
-    simulated_data[:, 5] *= np.power(simulated_data[:, 2], alpha - 1)
-    simulated_data[:, 4] = simulated_data[:, 3] / simulated_data[:, 2]
-    return simulated_data
+#
+# def simulate_model_backup(alpha, delta, n_firms, n_years, firm_value, p_state, p_cdfs, capital_grid,
+#                           capital_policy_grid):
+#     np.random.seed(1000)
+#     initial_state = np.random.random((n_firms, 2))
+#     profit_shock = np.random.random((n_firms, n_years))
+#     profit_index = np.array([int(i * NUM_PROFITABILITY) for i in initial_state[:, 0]], dtype=np.int64)
+#     capital_index = np.array([int(i * NUM_CAPITAL) for i in initial_state[:, 1]], dtype=np.int64)
+#     value_array = np.array([firm_value[capital_index[i], profit_index[i]] for i in range(n_firms)],
+#                            dtype=np.float32)
+#
+#     simulated_data = np.zeros((n_firms * n_years, 7), dtype=np.float32)
+#     for year in range(n_years):
+#         current_trans = p_cdfs[profit_index, :]
+#         simulated_data[year * n_firms: (year + 1) * n_firms, 6] = value_array
+#         simulated_data[year * n_firms: (year + 1) * n_firms, 2] = capital_grid[capital_index]
+#         simulated_data[year * n_firms: (year + 1) * n_firms, 5] = p_state[profit_index]
+#         capital_policy = np.array(
+#             [capital_policy_grid[capital_index[i], profit_index[i]] for i in range(n_firms)])
+#         simulated_data[year * n_firms: (year + 1) * n_firms, 3] = \
+#             capital_grid[capital_policy] - (1 - delta) * simulated_data[year * n_firms: (year + 1) * n_firms, 2]
+#
+#         simulated_data[year * n_firms: (year + 1) * n_firms, 0] = np.arange(n_firms)
+#         simulated_data[year * n_firms: (year + 1) * n_firms, 1] = np.float(year)
+#
+#         capital_index = capital_policy.copy()
+#         profit_shock_series = profit_shock[:, year]
+#
+#         profit_index = np.array(
+#             [len(current_trans[i][current_trans[i] < profit_shock_series[i]]) for i in range(n_firms)])
+#
+#     simulated_data[:, 5] *= np.power(simulated_data[:, 2], alpha - 1)
+#     simulated_data[:, 4] = simulated_data[:, 3] / simulated_data[:, 2]
+#     return simulated_data
 
 # @nb.jit(nopython=True)
 # def inner_plot(capital_grid, target_k):

@@ -49,8 +49,8 @@ class FirmValue(object):
 
         return error_code
 
-    def simulate_model(self, n_firms, n_years):
-        simulated_results = simulate_model(self._delta, n_firms, n_years, self._firm_value,
+    def simulate_model(self, n_firms, n_years, seed=100):
+        simulated_results = simulate_model(self._delta, n_firms, n_years, seed,
                                            self._profitability.state_values, self._profitability.cdfs,
                                            self._capital_grid, self._capital_policy_grid)
         simulated_result = np.vstack(simulated_results)
@@ -63,41 +63,3 @@ class FirmValue(object):
             simulated_df.loc[:, key] = simulated_df[key].astype(int)
 
         return simulated_df
-
-    def simulate_model_old(self, n_firms, n_years):
-        np.random.seed(1000)
-        initial_state = np.random.random((n_firms, 2))
-        profit_shock = np.random.random((n_firms, n_years))
-        profit_index = np.array([int(i * NUM_PROFITABILITY) for i in initial_state[:, 0]], dtype=np.int32)
-        capital_index = np.array([int(i * NUM_CAPITAL) for i in initial_state[:, 1]], dtype=np.int32)
-        value_array = np.array([self._firm_value[capital_index[i], profit_index[i]] for i in range(n_firms)],
-                               dtype=np.float32)
-
-        simulated_data_list = list()
-        cdf = self._profitability.cdfs
-
-        for year in range(n_years):
-            current_trans = cdf[profit_index, :]
-            simulated_data = DataFrame(columns=['firm_id', 'year', 'capital', 'inv_rate', 'profitability', 'value'])
-            simulated_data.loc[:, 'value'] = value_array
-            simulated_data.loc[:, 'capital'] = self._capital_grid[capital_index]
-            simulated_data.loc[:, 'profitability'] = self._profitability.state_values[profit_index]
-            simulated_data.loc[:, 'profitability'] *= simulated_data.loc[:, 'capital'].apply(
-                lambda x: x ** (self._alpha - 1))
-            capital_policy = np.array(
-                [self._capital_policy_grid[capital_index[i], profit_index[i]] for i in range(n_firms)])
-            investment = self._capital_grid[capital_policy] - (1 - self._delta) * simulated_data.loc[:, 'capital']
-            simulated_data.loc[:, 'inv_rate'] = investment / simulated_data.loc[:, 'capital']
-
-            simulated_data.loc[:, 'firm_id'] = list(range(n_firms))
-            simulated_data.loc[:, 'year'] = year
-            simulated_data_list.append(simulated_data)
-
-            capital_index = capital_policy.copy()
-            profit_shock_series = profit_shock[:, year]
-
-            profit_index = np.array(
-                [len(current_trans[i][current_trans[i] < profit_shock_series[i]]) for i in range(n_firms)])
-
-        simulated_data_df: DataFrame = pd.concat(simulated_data_list, ignore_index=True, sort=False)
-        return simulated_data_df

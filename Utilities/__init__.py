@@ -136,7 +136,7 @@ def get_cluster_cov(X, group):
     scale = np.dot(x_group_sums.T, x_group_sums)
     nobs = X.shape[0]
 
-    return scale / nobs
+    return scale / (nobs ** 2)
 
 
 if __name__ == '__main__':
