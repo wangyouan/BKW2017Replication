@@ -53,10 +53,8 @@ def optimize(alpha, delta, lambda_, beta, p_state, p_trans, capital_grid, firm_v
 
 
 @nb.jit(nopython=True, parallel=False)
-def simulate_model(delta, n_firms, n_years, seed, p_state, p_cdfs, capital_grid, capital_policy_grid):
-    np.random.seed(seed)
-    initial_state = np.random.random((n_firms, 2))
-    profit_shock = np.random.random((n_firms, n_years))
+def simulate_model(delta, n_firms, n_years, n_sim, initial_state, profit_shock, p_state, p_cdfs, capital_grid,
+                   capital_policy_grid):
     profit_index = np.array([int(i * NUM_PROFITABILITY) for i in initial_state[:, 0]], dtype=np.int64)
     capital_index = np.array([int(i * NUM_CAPITAL) for i in initial_state[:, 1]], dtype=np.int64)
 
@@ -88,7 +86,8 @@ def simulate_model(delta, n_firms, n_years, seed, p_state, p_cdfs, capital_grid,
         simulated_data[:, 1] = np.float32(year)
 
         capital_array = capital_prime.copy()
-        simulated_data_list.append(simulated_data)
+        if year >= n_years - n_sim:
+            simulated_data_list.append(simulated_data)
     return simulated_data_list
 
 #

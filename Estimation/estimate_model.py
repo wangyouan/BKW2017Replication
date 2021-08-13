@@ -25,6 +25,7 @@ import scipy.optimize as opt
 from pandas import DataFrame
 
 from Estimation.value_function import FirmValue
+from EstimationSummerSchool.calculate_standard_errors import get_standard_error_matrix
 
 data_moments = np.array([0.1885677166674841, 0.0285271524764669, 0.0768111297195329, 0.0032904184631855,
                          0.0012114713963756, 0.0058249053810193, 0.1421154126428439, 0.0080642043112130])
@@ -156,22 +157,6 @@ def get_standard_error(fv, sample_size):
     model_diff = get_moments(fv) - data_moments
     return get_standard_error_matrix(gradient_matrix, sample_size, simulation_size, num_mom=num_mom,
                                      model_diff=model_diff)
-
-
-def get_standard_error_matrix(gradient_matrix, sample_size, simulation_size, num_mom, model_diff):
-    w_matrix = np.linalg.inv(weight_matrix)
-    gwg_matrix = gradient_matrix.T @ w_matrix @ gradient_matrix
-    igwg_matrix = np.linalg.inv(gwg_matrix)
-    vc = (1 + sample_size * 1. / simulation_size) * igwg_matrix / sample_size
-    standard_error = np.sqrt(np.diag(vc))
-
-    gigwgg_matrix = gradient_matrix @ igwg_matrix @ gradient_matrix.T
-    eyegg_matrix = np.eye(num_mom) - gigwgg_matrix @ w_matrix
-    vpe_matrix = (1 + 1. / simulation_size) * (eyegg_matrix @ weight_matrix @ eyegg_matrix.T) / sample_size
-
-    jtest = np.dot(w_matrix @ model_diff, model_diff) * sample_size
-    moments_error = model_diff / np.sqrt(np.diag(vpe_matrix))
-    return standard_error, moments_error, jtest
 
 
 if __name__ == '__main__':

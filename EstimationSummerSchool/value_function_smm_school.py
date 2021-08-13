@@ -12,7 +12,7 @@ from pandas import DataFrame
 from quantecon import tauchen
 
 from EstimationSummerSchool.numba_method import optimize, simulate_model
-from EstimationSummerSchool import NUM_PROFITABILITY, NUM_CAPITAL, beta, rho, sigma, lambda_
+from EstimationSummerSchool import NUM_PROFITABILITY, NUM_CAPITAL, beta, rho, sigma, lambda_, NUM_ESTIMATED_YEARS
 
 
 class FirmValue(object):
@@ -49,8 +49,11 @@ class FirmValue(object):
 
         return error_code
 
-    def simulate_model(self, n_firms, n_years, seed=100):
-        simulated_results = simulate_model(self._delta, n_firms, n_years, seed,
+    def simulate_model(self, n_firms, n_years, n_sim=NUM_ESTIMATED_YEARS, seed=100):
+        np.random.seed(seed)
+        initial_state = np.random.random((n_firms, 2))
+        profit_shock = np.random.random((n_firms, n_years))
+        simulated_results = simulate_model(self._delta, n_firms, n_years, n_sim, initial_state, profit_shock,
                                            self._profitability.state_values, self._profitability.cdfs,
                                            self._capital_grid, self._capital_policy_grid)
         simulated_result = np.vstack(simulated_results)
