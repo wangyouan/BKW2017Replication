@@ -108,6 +108,27 @@ class FirmValue(Constants):
                 self._invest_policy_matrix[ip, iz] = invest_max_i
         return 0
 
+    def get_invest_policy(self):
+        invest_policy = np.zeros_like(self._invest_policy_matrix, dtype=np.float32)
+        for ip in range(self.P_NUM):
+            invest_policy[ip, :] = self._investment_grid[self._invest_policy_matrix[ip, :]]
+        return invest_policy
+
+    def get_debt_policy(self):
+        debt_policy = np.zeros_like(self._debt_policy_matrix, dtype=np.float32)
+        for ip in range(self.P_NUM):
+            debt_policy[ip, :] = self._debt_prime_grid[self._debt_policy_matrix[ip, :]]
+        return debt_policy
+
+    def get_firm_value_matrix(self):
+        return self._firm_value.copy()
+
+    def get_profitability_grid(self):
+        return self._profitability_grid.copy()
+
+    def get_debt_grid(self):
+        return self._debt_grid.copy()
+
     def optimize_terry(self):
         """
         Follow Stephen James Terry. Junior Accounting Theory Workshop, intro to structural estimation, 2018
