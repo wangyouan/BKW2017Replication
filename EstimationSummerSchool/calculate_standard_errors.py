@@ -93,21 +93,23 @@ def get_standard_error(fv, data_moments, sample_size, weight_matrix):
         sim_moments += calculate_moments(simulated_data)
     model_diff = sim_moments / NUM_SIMULATION - data_moments
     return get_standard_error_matrix(gradient_matrix, weight_matrix, simulation_size,
-                                     num_mom=num_mom, model_diff=model_diff)
+                                     num_mom=num_mom, model_diff=model_diff, sample_size=sample_size)
 
 
-def get_standard_error_matrix(gradient_matrix, weight_matrix, simulation_size, num_mom, model_diff):
+def get_standard_error_matrix(gradient_matrix, weight_matrix, simulation_size, num_mom, model_diff, sample_size):
     cov_matrix = np.linalg.inv(weight_matrix)
-    adj_cov_matrix = (1 + 1. / simulation_size) * cov_matrix
+    # adj_cov_matrix = (1 + 1. / simulation_size) * cov_matrix
     gwg_matrix = gradient_matrix.T @ weight_matrix @ gradient_matrix
     igwg_matrix = np.linalg.inv(gwg_matrix)
-    xxx = igwg_matrix @ gradient_matrix.T
-    covar_estimation = xxx @ weight_matrix @ adj_cov_matrix @ weight_matrix.T @ xxx.T
-    standard_error = np.sqrt(np.diag(covar_estimation))
+    vc = (1.0 / sample_size + 1.0 / simulation_size) * igwg_matrix
+    # xxx = igwg_matrix @ gradient_matrix.T
+    # covar_estimation = xxx @ weight_matrix @ adj_cov_matrix @ weight_matrix.T @ xxx.T
+    standard_error = np.sqrt(np.diag(vc))
 
     gigwgg_matrix = gradient_matrix @ igwg_matrix @ gradient_matrix.T
     eyegg_matrix = np.eye(num_mom) - gigwgg_matrix @ weight_matrix
-    vpe_matrix = eyegg_matrix @ adj_cov_matrix @ eyegg_matrix.T
+    vpe_matrix = eyegg_matrix @ cov_matrix @ eyegg_matrix.T
+    vpe_matrix *= (1.0 / sample_size + 1.0 / simulation_size)
 
     chi = model_diff.T @ np.linalg.pinv(vpe_matrix) @ model_diff
     j_test = 1 - chi2.cdf(chi, 1)
